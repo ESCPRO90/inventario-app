@@ -2201,29 +2201,52 @@ async function loadTransferStock() {
 
 function renderTransferStock(data) {
   var q = document.getElementById('trans-search').value.toLowerCase();
-  var filtered = q ? data.filter(function(i) { return i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q); }) : data;
-  document.getElementById('trans-stock-tbody').innerHTML = filtered.length ? filtered.map(function(item) {
+  var filtered = q ? data.filter(function(i) {
+    return i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q);
+  }) : data;
+  var tbody = document.getElementById('trans-stock-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><p>Sin productos en esta ubicacion</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  filtered.forEach(function(item) {
     var days = Math.floor((new Date(item.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
-    var color = days < 0 ? 'var(--red-400)' : days <= 60 ? 'var(--red-400)' : days <= 90 ? 'var(--amber-400)' : 'var(--teal-600)';
-    return '<tr>'
-      + '<td class="mono" style="font-size:12px">' + item.referencia + '</td>'
+    var clr = days < 0 ? '#E24B4A' : days <= 60 ? '#E24B4A' : days <= 90 ? '#EF9F27' : '#1D9E75';
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="mono" style="font-size:12px">' + item.referencia + '</td>'
       + '<td style="font-size:12px">' + item.descripcion.substring(0,35) + '</td>'
       + '<td class="mono" style="font-size:11px">' + item.numero_lote + '</td>'
-      + '<td style="font-size:12px;color:' + color + '">' + fmt(item.fecha_vencimiento) + '</td>'
+      + '<td style="font-size:12px;color:' + clr + '">' + fmt(item.fecha_vencimiento) + '</td>'
       + '<td><strong>' + item.cantidad + '</strong></td>'
       + '<td><div style="display:flex;align-items:center;gap:6px">'
-      + '<input type="number" min="1" max="' + item.cantidad + '" value="1" id="trans-cant-' + item.lote_id + '" style="width:60px">'
-      + '<button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="agregarAlCarrito('' + item.lote_id + '','' + item.referencia + '','' + item.descripcion.replace(/'/g, ' ') + '',' + item.cantidad + ')">Agregar</button>'
-      + '</div></td>'
-      + '</tr>';
-  }).join('') : '<tr><td colspan="6"><div class="empty"><p>Sin productos en esta ubicacion</p></div></td></tr>';
+      + '<input type="number" min="1" max="' + item.cantidad + '" value="1" id="tc-' + item.lote_id + '" style="width:60px">'
+      + '<button class="btn btn-outline" style="font-size:11px;padding:3px 10px"'
+      + ' data-lid="' + item.lote_id + '" data-ref="' + item.referencia.replace(/"/g,'') + '" data-max="' + item.cantidad + '"'
+      + ' onclick="addToCart(this)">Agregar</button>'
+      + '</div></td>';
+    tbody.appendChild(tr);
+  });
 }
 
+function addToCart(btn) {
+  var lid = btn.getAttribute('data-lid');
+  var ref = btn.getAttribute('data-ref');
+  var max = parseInt(btn.getAttribute('data-max'));
+  var cantEl = document.getElementById('tc-' + lid);
+  var cant = parseInt(cantEl ? cantEl.value : 1) || 1;
+  if (cant > max) { showAlert('Stock insuficiente. Disponible: ' + max, 'error'); return; }
+  var item = transStockData.find(function(i) { return i.lote_id === lid; });
+  var desc = item ? item.descripcion : ref;
+  var existe = transCarrito.find(function(i) { return i.lote_id === lid; });
+  if (existe) { existe.cantidad = cant; } else { transCarrito.push({lote_id:lid, referencia:ref, descripcion:desc, cantidad:cant, cant_max:max}); }
+  renderCarrito();
+  showAlert(ref + ' agregado al carrito.');
+}
 function filterTransferStock() { renderTransferStock(transStockData); }
 
-function agregarAlCarrito(loteId, ref, desc, cantMax) {
-  var cantEl = document.getElementById('trans-cant-' + loteId);
-  var cant = parseInt(cantEl ? cantEl.value : 1) || 1;
+function agregarAlCarrito(loteId, ref, desc, cantMax, cant) {
+  cant = cant || 1;
   if (cant > cantMax) { showAlert('No hay suficiente stock. Disponible: ' + cantMax, 'error'); return; }
   var existe = transCarrito.find(function(i) { return i.lote_id === loteId; });
   if (existe) { existe.cantidad = cant; } else { transCarrito.push({lote_id: loteId, referencia: ref, descripcion: desc, cantidad: cant, cant_max: cantMax}); }
