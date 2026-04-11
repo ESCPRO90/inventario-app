@@ -485,6 +485,14 @@
       <svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
       Bitácora
     </div>
+    <div class="sidebar-item" data-page="reportes">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Reportes PDF
+    </div>
+    <div class="sidebar-item" data-page="reportes">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Reportes PDF
+    </div>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -758,6 +766,197 @@
       </div>
     </div>
 
+
+    <!-- ═══ REPORTES ═══ -->
+    <div class="page" id="page-reportes">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Reportes PDF</div>
+          <div class="page-subtitle">Generá reportes descargables de tu inventario</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Inventario general de bodega</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Stock completo de bodega con lotes, cantidades y fechas de vencimiento.</div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteBodega()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Inventario por maleta</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">Seleccioná la maleta:</div>
+            <select id="rep-maleta" style="width:100%;margin-bottom:10px">
+              <option value="URO">Maleta URO — Lic. Hasbun / Ricardo</option>
+              <option value="NEURO">Maleta NEURO — Lic. Palacios</option>
+              <option value="VP1">Maleta VP1 — Dra. Cácedes</option>
+              <option value="VP2">Maleta VP2 — Lic. Hasbun / Ricardo</option>
+            </select>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteMaleta()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Productos vencidos y por vencer</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">Mostrar productos que venzan en:</div>
+            <select id="rep-dias" style="width:100%;margin-bottom:10px">
+              <option value="0">Solo vencidos</option>
+              <option value="30">30 días</option>
+              <option value="60">60 días</option>
+              <option value="90" selected>90 días</option>
+              <option value="180">180 días</option>
+            </select>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteVencimientos()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Consignaciones activas por cliente</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Listado de todos los productos en préstamo actualmente.</div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteConsignaciones()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Notas de envío por período</div></div>
+          <div style="padding:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde</div>
+                <input type="date" id="rep-notas-desde" style="width:100%">
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta</div>
+                <input type="date" id="rep-notas-hasta" style="width:100%">
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteNotas()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Movimientos por período</div></div>
+          <div style="padding:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde</div>
+                <input type="date" id="rep-mov-desde" style="width:100%">
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta</div>
+                <input type="date" id="rep-mov-hasta" style="width:100%">
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteMovimientos()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- REPORTES -->
+    <div class="page" id="page-reportes">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Reportes PDF</div>
+          <div class="page-subtitle">Generá reportes descargables de tu inventario</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Inventario general de bodega</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Stock completo de bodega con lotes, cantidades y fechas de vencimiento.</div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteBodega()">Descargar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Inventario por maleta</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Seleccioná la maleta:</div>
+            <select id="rep-maleta" style="width:100%;margin-bottom:10px">
+              <option value="URO">Maleta URO</option>
+              <option value="NEURO">Maleta NEURO</option>
+              <option value="VP1">Maleta VP1</option>
+              <option value="VP2">Maleta VP2</option>
+            </select>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteMaleta()">Descargar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Productos vencidos y por vencer</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Mostrar productos que venzan en:</div>
+            <select id="rep-dias" style="width:100%;margin-bottom:10px">
+              <option value="0">Solo vencidos</option>
+              <option value="30">30 dias</option>
+              <option value="60">60 dias</option>
+              <option value="90" selected>90 dias</option>
+              <option value="180">180 dias</option>
+            </select>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteVencimientos()">Descargar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Consignaciones activas</div></div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Listado de todos los productos en prestamo actualmente.</div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteConsignaciones()">Descargar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Notas de envio por periodo</div></div>
+          <div style="padding:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde</div><input type="date" id="rep-notas-desde" style="width:100%"></div>
+              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta</div><input type="date" id="rep-notas-hasta" style="width:100%"></div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteNotas()">Descargar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Movimientos por periodo</div></div>
+          <div style="padding:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde</div><input type="date" id="rep-mov-desde" style="width:100%"></div>
+              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta</div><input type="date" id="rep-mov-hasta" style="width:100%"></div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="reporteMovimientos()">Descargar PDF</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </main>
 </div>
 
@@ -783,6 +982,10 @@
     <div class="bnav-item" data-page="clientes">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       <span>Clientes</span>
+    </div>
+    <div class="bnav-item" data-page="reportes">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <span>Reportes</span>
     </div>
   </div>
 </nav>
@@ -1607,8 +1810,400 @@ async function loadMovimientos() {
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
+
+// ── LOTE SEARCH ──
+let currentLoteTarget = null;
+let currentLoteRowIdx = null;
+
+function openLoteSearchForRow(prefix, rowIdx) {
+  currentLoteTarget = prefix;
+  currentLoteRowIdx = rowIdx;
+  document.getElementById('modal-lote-search').classList.add('open');
+  document.getElementById('lote-search-input').value = '';
+  document.getElementById('lote-search-results').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3)">Escribi al menos 2 caracteres...</div>';
+  setTimeout(function(){ document.getElementById('lote-search-input').focus(); }, 100);
+}
+
+async function doLoteSearch() {
+  var q = document.getElementById('lote-search-input').value.trim();
+  if (q.length < 2) return;
+  var container = document.getElementById('lote-search-results');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando...</div>';
+  try {
+    var data = await api('/stock/?referencia=' + encodeURIComponent(q) + '&solo_con_stock=true');
+    if (!data.length) {
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3)">Sin resultados con stock disponible</div>';
+      return;
+    }
+    container.innerHTML = data.slice(0,15).map(function(item) {
+      var days = Math.floor((new Date(item.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+      var color = days < 0 ? '#E24B4A' : days <= 60 ? '#E24B4A' : days <= 90 ? '#EF9F27' : '#1D9E75';
+      var safeDesc = item.descripcion.replace(/"/g, '').replace(/'/g, '').substring(0,50);
+      var safeRef = item.referencia.replace(/"/g, '').replace(/'/g, '');
+      var safeLote = item.numero_lote.replace(/"/g, '').replace(/'/g, '');
+      var safeVence = item.fecha_vencimiento;
+      var safeUbic = item.ubicacion.replace(/"/g, '').replace(/'/g, '');
+      return '<div onclick="confirmLoteSelection('' + safeRef + '','' + safeLote + '',' + item.cantidad + ','' + safeVence + '','' + safeDesc + '','' + safeUbic + '')" style="padding:12px 16px;border-bottom:1px solid var(--gray-100);cursor:pointer" onmouseover="this.style.background='#e8f5ef'" onmouseout="this.style.background=''">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        + '<div><div style="font-size:13px;font-weight:500">' + item.referencia + '</div>'
+        + '<div style="font-size:11px;color:#5F5E5A">' + item.descripcion.substring(0,45) + '</div>'
+        + '<div style="font-size:11px;color:#888;font-family:monospace">Lote: ' + item.numero_lote + ' - ' + item.ubicacion + '</div></div>'
+        + '<div style="text-align:right;margin-left:8px;flex-shrink:0">'
+        + '<div style="font-size:15px;font-weight:600">' + item.cantidad + ' uds</div>'
+        + '<div style="font-size:11px;color:' + color + ';margin-top:2px">Vence ' + fmt(item.fecha_vencimiento) + '</div>'
+        + '</div></div></div>';
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="padding:20px;color:#791F1F">Error: ' + e.message + '</div>';
+  }
+}
+
+function confirmLoteSelection(ref, lote, cant, vence, desc, ubicacion) {
+  var p = currentLoteTarget;
+  var i = currentLoteRowIdx;
+  var disp = document.getElementById(p + '-lote-disp-' + i);
+  var hidden = document.getElementById(p + '-lote-id-' + i);
+  var descEl = document.getElementById(p + '-lote-desc-' + i);
+  var cantEl = document.getElementById(p + '-cant-' + i);
+  if (disp) disp.textContent = ref + ' - Lote: ' + lote;
+  if (hidden) hidden.value = JSON.stringify({ref:ref, lote:lote, cant_max:cant, vence:vence, desc:desc});
+  if (descEl) descEl.textContent = desc.substring(0,40) + ' - ' + cant + ' uds disp. - ' + ubicacion;
+  if (cantEl) { cantEl.max = cant; }
+  document.getElementById('modal-lote-search').classList.remove('open');
+}
+
+function makeItemRow(prefix, rowIdx) {
+  var tr = document.createElement('tr');
+  tr.id = prefix + '-row-' + rowIdx;
+  tr.innerHTML = '<td>'
+    + '<div style="font-size:11px;color:var(--text-3);font-family:var(--mono);margin-bottom:4px" id="' + prefix + '-lote-disp-' + rowIdx + '">Sin seleccionar</div>'
+    + '<input type="hidden" id="' + prefix + '-lote-id-' + rowIdx + '">'
+    + '<button onclick="openLoteSearchForRow('' + prefix + '',' + rowIdx + ')" class="btn btn-outline" style="font-size:11px;padding:3px 10px">Buscar lote</button>'
+    + '</td>'
+    + '<td><div style="font-size:11px;color:var(--text-2)" id="' + prefix + '-lote-desc-' + rowIdx + '">-</div></td>'
+    + '<td><input type="number" min="1" value="1" id="' + prefix + '-cant-' + rowIdx + '" style="width:70px"></td>'
+    + '<td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:18px">X</button></td>';
+  return tr;
+}
+
+function addNotaItem() {
+  var tbody = document.getElementById('nota-items-body');
+  var headers = tbody.previousElementSibling;
+  if (headers) {
+    var ths = headers.querySelectorAll('th');
+    if (ths.length < 4) {
+      headers.innerHTML = '<tr><th>Producto / Lote</th><th>Descripcion</th><th>Cantidad</th><th></th></tr>';
+    }
+  }
+  tbody.appendChild(makeItemRow('nota', tbody.children.length));
+}
+
+function addFacturaItem() {
+  var tbody = document.getElementById('fac-items-body');
+  var headers = tbody.previousElementSibling;
+  if (headers) {
+    headers.innerHTML = '<tr><th>Producto / Lote</th><th>Descripcion</th><th>Cantidad</th><th></th></tr>';
+  }
+  tbody.appendChild(makeItemRow('fac', tbody.children.length));
+}
+
+function addConsigItem() {
+  var tbody = document.getElementById('con-items-body');
+  var headers = tbody.previousElementSibling;
+  if (headers) {
+    headers.innerHTML = '<tr><th>Producto / Lote</th><th>Descripcion</th><th>Cantidad</th><th></th></tr>';
+  }
+  tbody.appendChild(makeItemRow('con', tbody.children.length));
+}
+
+function getItemsFromRows(prefix, tbody) {
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById(prefix + '-lote-id-' + i);
+    var cantEl = document.getElementById(prefix + '-cant-' + i);
+    if (hidden && hidden.value && cantEl) {
+      try {
+        var loteData = JSON.parse(hidden.value);
+        items.push({ lote_ref: loteData.ref, lote_num: loteData.lote, cantidad: parseInt(cantEl.value)||1 });
+      } catch(e) {}
+    }
+  }
+  return items;
+}
+
+// Override saveNota to use new item system
+var _origSaveNota = saveNota;
+async function saveNota() {
+  var numero = document.getElementById('nota-numero').value.trim();
+  var fecha = document.getElementById('nota-fecha').value;
+  if (!numero || !fecha) { showAlert('El numero y la fecha son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('nota-items-body');
+  var items = getItemsFromRows('nota', tbody);
+  if (!items.length) { showAlert('Busca y agrega al menos un producto.', 'error'); return; }
+  // Resolve lote IDs
+  showAlert('Procesando...');
+  try {
+    var resolvedItems = [];
+    for (var item of items) {
+      var stockData = await api('/stock/?referencia=' + encodeURIComponent(item.lote_ref) + '&solo_con_stock=false');
+      var match = stockData.find(function(s){ return s.numero_lote === item.lote_num; });
+      if (!match) throw new Error('No se encontro el lote ' + item.lote_num + ' para ' + item.lote_ref);
+      // Get lote_id from entradas
+      var entradas = await api('/entradas/?limit=200');
+      var loteId = null;
+      for (var entrada of entradas) {
+        if (entrada.items) {
+          for (var ei of entrada.items) {
+            if (ei.lote && ei.lote.numero_lote === item.lote_num && ei.lote.producto && ei.lote.producto.referencia === item.lote_ref) {
+              loteId = ei.lote.id;
+              break;
+            }
+          }
+        }
+        if (loteId) break;
+      }
+      if (!loteId) throw new Error('No se pudo resolver el ID del lote: ' + item.lote_num + '. Usa /docs para esta operacion.');
+      resolvedItems.push({ lote_id: loteId, cantidad: item.cantidad });
+    }
+    await api('/notas/', { method:'POST', body: JSON.stringify({
+      numero: numero, fecha: fecha,
+      tipo: document.getElementById('nota-tipo').value,
+      direccion: document.getElementById('nota-dir').value,
+      cliente_id: document.getElementById('nota-cliente').value || null,
+      maleta_id: document.getElementById('nota-maleta').value || null,
+      bienes_titulo_de: document.getElementById('nota-titulo').value || null,
+      condiciones_pago: document.getElementById('nota-condiciones').value || null,
+      usuario_autoriza: document.getElementById('nota-autoriza').value || null,
+      usuario_entrega: document.getElementById('nota-entrega').value || null,
+      usuario_recibe: document.getElementById('nota-recibe').value || null,
+      items: resolvedItems,
+    })});
+    closeModal('modal-nota');
+    showAlert('Nota de envio creada correctamente.');
+    document.getElementById('nota-items-body').innerHTML = '';
+    loadNotas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+// ── PDF HELPERS ──
+function pdfHeader(doc, titulo, subtitulo) {
+  doc.setFillColor(8, 80, 65);
+  doc.rect(0, 0, 210, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ESCPRO90 - Sistema de Inventario', 14, 10);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(titulo, 14, 17);
+  doc.setTextColor(80, 80, 80);
+  doc.setFontSize(8);
+  doc.text(subtitulo, 14, 28);
+  doc.text('Generado: ' + new Date().toLocaleString('es-SV'), 135, 28);
+  doc.setDrawColor(200, 224, 212);
+  doc.line(14, 31, 196, 31);
+  return 36;
+}
+
+function pdfTable(doc, headers, rows, startY) {
+  var y = startY;
+  doc.setFillColor(232, 245, 239);
+  doc.rect(14, y, 182, 7, 'F');
+  doc.setTextColor(8, 80, 65);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  var x = 14;
+  headers.forEach(function(h) {
+    doc.text(h.label, x + 1.5, y + 5);
+    x += h.w;
+  });
+  y += 7;
+  doc.setFont('helvetica', 'normal');
+  rows.forEach(function(row, ri) {
+    if (y > 272) { doc.addPage(); y = 18; }
+    if (ri % 2 === 0) {
+      doc.setFillColor(248, 252, 250);
+      doc.rect(14, y, 182, 6.5, 'F');
+    }
+    doc.setTextColor(30, 30, 30);
+    x = 14;
+    row.forEach(function(cell, ci) {
+      var maxChars = Math.floor(headers[ci].w / 1.85);
+      var txt = String(cell === null || cell === undefined ? '-' : cell).substring(0, maxChars);
+      doc.text(txt, x + 1.5, y + 4.5);
+      x += headers[ci].w;
+    });
+    y += 6.5;
+  });
+  return y + 4;
+}
+
+async function reporteBodega() {
+  showAlert('Generando reporte...');
+  try {
+    var data = await api('/stock/bodega');
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var y = pdfHeader(doc, 'Inventario General de Bodega', 'Stock completo - ' + data.length + ' registros - ' + data.reduce(function(s,i){return s+i.cantidad},0) + ' unidades totales');
+    y += 2;
+    var headers = [{label:'Referencia',w:30},{label:'Descripcion',w:60},{label:'Lote',w:30},{label:'Vencimiento',w:25},{label:'Cant.',w:15},{label:'Estado',w:22}];
+    var rows = data.map(function(i) {
+      var days = Math.floor((new Date(i.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+      var estado = days < 0 ? 'VENCIDO' : days <= 60 ? 'CRITICO' : days <= 90 ? 'ALERTA' : 'OK';
+      return [i.referencia, i.descripcion.substring(0,33), i.numero_lote, fmt(i.fecha_vencimiento), i.cantidad, estado];
+    });
+    pdfTable(doc, headers, rows, y);
+    doc.save('inventario-bodega-' + today() + '.pdf');
+    showAlert('Reporte de bodega descargado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function reporteMaleta() {
+  var tipo = document.getElementById('rep-maleta').value;
+  var info = MALETA_INFO[tipo];
+  showAlert('Generando reporte...');
+  try {
+    var data = await api('/stock/maleta/' + tipo);
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var y = pdfHeader(doc, 'Inventario - ' + info.nombre, 'Responsable: ' + info.resp + ' - ' + data.reduce(function(s,i){return s+i.cantidad},0) + ' unidades');
+    y += 2;
+    var headers = [{label:'Referencia',w:32},{label:'Descripcion',w:60},{label:'Lote',w:30},{label:'Vencimiento',w:26},{label:'Cant.',w:16},{label:'Estado',w:18}];
+    var rows = data.map(function(i) {
+      var days = Math.floor((new Date(i.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+      var estado = days < 0 ? 'VENCIDO' : days <= 60 ? 'CRITICO' : days <= 90 ? 'ALERTA' : 'OK';
+      return [i.referencia, i.descripcion.substring(0,35), i.numero_lote, fmt(i.fecha_vencimiento), i.cantidad, estado];
+    });
+    pdfTable(doc, headers, rows, y);
+    doc.save('maleta-' + tipo.toLowerCase() + '-' + today() + '.pdf');
+    showAlert('Reporte descargado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function reporteVencimientos() {
+  var dias = document.getElementById('rep-dias').value;
+  showAlert('Generando reporte...');
+  try {
+    var data = await api('/stock/alertas/vencimiento?dias=' + dias);
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var label = dias === '0' ? 'Productos Vencidos' : 'Productos por vencer en ' + dias + ' dias';
+    var y = pdfHeader(doc, label, 'Todas las ubicaciones - ' + data.length + ' registros en alerta');
+    y += 2;
+    var headers = [{label:'Referencia',w:26},{label:'Descripcion',w:50},{label:'Lote',w:26},{label:'Vencimiento',w:24},{label:'Dias',w:14},{label:'Cant.',w:14},{label:'Ubicacion',w:28}];
+    var rows = data.map(function(i) {
+      var days = Math.floor((new Date(i.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+      return [i.referencia, i.descripcion.substring(0,28), i.numero_lote, fmt(i.fecha_vencimiento), days < 0 ? 'VENCIDO' : days+'d', i.cantidad, i.ubicacion.substring(0,15)];
+    });
+    pdfTable(doc, headers, rows, y);
+    doc.save('vencimientos-' + today() + '.pdf');
+    showAlert('Reporte descargado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function reporteConsignaciones() {
+  showAlert('Generando reporte...');
+  try {
+    var data = await api('/consignaciones/?estado=ACTIVA&limit=200');
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var y = pdfHeader(doc, 'Consignaciones Activas', data.length + ' consignaciones en prestamo');
+    y += 2;
+    var headers = [{label:'Fecha',w:26},{label:'Cliente',w:80},{label:'Estado',w:26},{label:'Observaciones',w:50}];
+    var rows = data.map(function(c) {
+      return [fmt(c.fecha), c.cliente ? c.cliente.nombre.substring(0,45) : '-', c.estado, (c.observaciones||'').substring(0,28)];
+    });
+    pdfTable(doc, headers, rows, y);
+    doc.save('consignaciones-activas-' + today() + '.pdf');
+    showAlert('Reporte descargado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function reporteNotas() {
+  var desde = document.getElementById('rep-notas-desde').value;
+  var hasta = document.getElementById('rep-notas-hasta').value;
+  showAlert('Generando reporte...');
+  try {
+    var url = '/notas/?limit=500';
+    if (desde) url += '&fecha_desde=' + desde;
+    if (hasta) url += '&fecha_hasta=' + hasta;
+    var data = await api(url);
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var y = pdfHeader(doc, 'Notas de Envio', 'Periodo: ' + (desde ? fmt(desde) : '-') + ' al ' + (hasta ? fmt(hasta) : '-') + ' - ' + data.length + ' notas');
+    y += 2;
+    var headers = [{label:'N',w:16},{label:'Tipo',w:24},{label:'Fecha',w:22},{label:'Cliente/Destino',w:55},{label:'Estado',w:22},{label:'Dir.',w:16},{label:'Items',w:15},{label:'Obs.',w:12}];
+    var rows = data.map(function(n) {
+      return [n.numero, n.tipo==='NE_PRODUCTO'?'NE Prod':'NE', fmt(n.fecha), (n.cliente?n.cliente.nombre:n.maleta?n.maleta.nombre:'-').substring(0,30), n.estado, n.direccion, n.items?n.items.length:'-', ''];
+    });
+    pdfTable(doc, headers, rows, y);
+    doc.save('notas-envio-' + today() + '.pdf');
+    showAlert('Reporte descargado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function reporteMovimientos() {
+  var desde = document.getElementById('rep-mov-desde').value;
+  var hasta = document.getElementById('rep-mov-hasta').value;
+  showAlert('Generando reporte...');
+  try {
+    var url = '/movimientos/?limit=500';
+    if (desde) url += '&fecha_desde=' + desde;
+    if (hasta) url += '&fecha_hasta=' + hasta;
+    var data = await api(url);
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var y = pdfHeader(doc, 'Bitacora de Movimientos', 'Periodo: ' + (desde ? fmt(desde) : '-') + ' al ' + (hasta ? fmt(hasta) : '-') + ' - ' + data.length + ' movimientos');
+    y += 2;
+    var headers = [{label:'Fecha',w:30},{label:'Tipo',w:30},{label:'Cantidad',w:18},{label:'Referencia',w:28},{label:'Lote ID',w:50},{label:'Obs',w:26}];
+    var rows = data.map(function(m) {
+      return [fmt(m.fecha.split('T')[0])+' '+(m.fecha.split('T')[1]||'').substring(0,5), TIPO_LABEL[m.tipo]||m.tipo, m.cantidad, m.referencia_tipo||'-', (m.lote_id||'').substring(0,25)+'...', (m.observaciones||'').substring(0,14)];
+    });
+    pdfTable(doc, headers, rows, y);
+    doc.save('movimientos-' + today() + '.pdf');
+    showAlert('Reporte descargado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+function initReporteDates() {
+  var d = today();
+  var firstDay = d.substring(0,8) + '01';
+  ['rep-notas-desde','rep-mov-desde'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && !el.value) el.value = firstDay;
+  });
+  ['rep-notas-hasta','rep-mov-hasta'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && !el.value) el.value = d;
+  });
+}
+
 // ── INIT ──
+initReporteDates();
 loadDashboard();
 </script>
+
+<!-- MODAL BUSCADOR DE LOTES -->
+<div class="modal-overlay" id="modal-lote-search">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div class="modal-title">Buscar producto / lote</div>
+      <button class="modal-close" onclick="document.getElementById('modal-lote-search').classList.remove('open')">X</button>
+    </div>
+    <div class="modal-body" style="padding:12px">
+      <div style="margin-bottom:12px">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="lote-search-input" placeholder="Referencia o descripcion..." oninput="doLoteSearch()" style="width:100%">
+        </div>
+      </div>
+      <div id="lote-search-results" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+        <div style="padding:20px;text-align:center;color:var(--text-3);font-size:13px">Escribi al menos 2 caracteres...</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
