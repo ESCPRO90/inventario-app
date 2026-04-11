@@ -464,6 +464,10 @@
       <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
       Entradas
     </div>
+    <div class="sidebar-item" data-page="transferencias">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Transferencias
+    </div>
     <div class="sidebar-item" data-page="notas">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Notas de envío
@@ -957,6 +961,65 @@
 
       </div>
     </div>
+
+    <!-- TRANSFERENCIAS -->
+    <div class="page" id="page-transferencias">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Transferencias</div>
+          <div class="page-subtitle">Mover productos entre bodega y maletas</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-head"><div class="card-title">Nueva transferencia</div></div>
+        <div style="padding:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Origen</label>
+              <select id="trans-desde" style="width:100%" onchange="loadTransferStock()">
+                <option value="">-- Seleccionar --</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Destino</label>
+              <select id="trans-hasta" style="width:100%">
+                <option value="">-- Seleccionar --</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div class="search-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="search-input" id="trans-search" placeholder="Buscar producto por referencia..." oninput="filterTransferStock()" style="width:100%">
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0;max-height:320px;overflow-y:auto">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Referencia</th><th>Descripcion</th><th>Lote</th><th>Vence</th><th>Disp.</th><th>Transferir</th></tr></thead>
+                <tbody id="trans-stock-tbody">
+                  <tr><td colspan="6"><div class="empty"><p>Selecciona el origen para ver el stock</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="trans-carrito-card" style="display:none">
+        <div class="card-head">
+          <div class="card-title">Productos a transferir</div>
+          <div class="card-action" onclick="limpiarCarrito()">Limpiar</div>
+        </div>
+        <div style="padding:16px">
+          <div id="trans-carrito-body"></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px">
+            <button class="btn btn-primary" onclick="ejecutarTransferencia()">Ejecutar transferencia</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -970,6 +1033,10 @@
     <div class="bnav-item" data-page="stock">
       <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
       <span>Bodega</span>
+    </div>
+    <div class="bnav-item" data-page="transferencias">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <span>Transfer.</span>
     </div>
     <div class="bnav-item" data-page="notas">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
@@ -1328,6 +1395,7 @@ function loadPage(page) {
   else if (page === 'facturas')  loadFacturas();
   else if (page === 'clientes')  loadClientes();
   else if (page === 'movimientos') loadMovimientos();
+  else if (page === 'transferencias') { loadTransferUbicaciones(); }
 }
 
 document.querySelectorAll('[data-page]').forEach(el => {
@@ -1831,7 +1899,7 @@ async function doLoteSearch() {
   var container = document.getElementById('lote-search-results');
   container.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando...</div>';
   try {
-    var data = await api('/stock/?referencia=' + encodeURIComponent(q) + '&solo_con_stock=true');
+    var data = await api('/lotes/buscar?referencia=' + encodeURIComponent(q) + '&solo_con_stock=true');
     if (!data.length) {
       container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3)">Sin resultados con stock disponible</div>';
       return;
@@ -1867,6 +1935,7 @@ async function doLoteSearch() {
 function confirmLoteSelection(el) {
   var ref = el.getAttribute('data-ref');
   var lote = el.getAttribute('data-lote');
+  var loteId = el.getAttribute('data-lote-id');
   var cant = parseInt(el.getAttribute('data-cant'));
   var vence = el.getAttribute('data-vence');
   var desc = el.getAttribute('data-desc');
@@ -1878,7 +1947,7 @@ function confirmLoteSelection(el) {
   var descEl = document.getElementById(p + '-lote-desc-' + i);
   var cantEl = document.getElementById(p + '-cant-' + i);
   if (disp) disp.textContent = ref + ' - Lote: ' + lote;
-  if (hidden) hidden.value = JSON.stringify({ref:ref, lote:lote, cant_max:cant, vence:vence, desc:desc});
+  if (hidden) hidden.value = JSON.stringify({ref:ref, lote:lote, lote_id:loteId, cant_max:cant, vence:vence, desc:desc});
   if (descEl) descEl.textContent = desc.substring(0,40) + ' - ' + cant + ' uds - ' + ubic;
   if (cantEl) cantEl.max = cant;
   document.getElementById('modal-lote-search').classList.remove('open');
@@ -2103,6 +2172,219 @@ function initReporteDates() {
     var el = document.getElementById(id);
     if (el && !el.value) el.value = d;
   });
+}
+
+
+// ── TRANSFERENCIAS ──
+var transStockData = [];
+var transCarrito = [];
+
+async function loadTransferUbicaciones() {
+  try {
+    var data = await api('/stock/ubicaciones/todas');
+    var opts = data.map(function(u) { return '<option value="' + u.id + '" data-tipo="' + u.tipo + '">' + u.nombre + '</option>'; }).join('');
+    document.getElementById('trans-desde').innerHTML = '<option value="">-- Seleccionar origen --</option>' + opts;
+    document.getElementById('trans-hasta').innerHTML = '<option value="">-- Seleccionar destino --</option>' + opts;
+  } catch(e) { showAlert('Error cargando ubicaciones: ' + e.message, 'error'); }
+}
+
+async function loadTransferStock() {
+  var ubicId = document.getElementById('trans-desde').value;
+  if (!ubicId) return;
+  document.getElementById('trans-stock-tbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  try {
+    var data = await api('/lotes/buscar?solo_con_stock=true');
+    transStockData = data.filter(function(i) { return i.ubicacion_id === ubicId; });
+    renderTransferStock(transStockData);
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+function renderTransferStock(data) {
+  var q = document.getElementById('trans-search').value.toLowerCase();
+  var filtered = q ? data.filter(function(i) { return i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q); }) : data;
+  document.getElementById('trans-stock-tbody').innerHTML = filtered.length ? filtered.map(function(item) {
+    var days = Math.floor((new Date(item.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+    var color = days < 0 ? 'var(--red-400)' : days <= 60 ? 'var(--red-400)' : days <= 90 ? 'var(--amber-400)' : 'var(--teal-600)';
+    return '<tr>'
+      + '<td class="mono" style="font-size:12px">' + item.referencia + '</td>'
+      + '<td style="font-size:12px">' + item.descripcion.substring(0,35) + '</td>'
+      + '<td class="mono" style="font-size:11px">' + item.numero_lote + '</td>'
+      + '<td style="font-size:12px;color:' + color + '">' + fmt(item.fecha_vencimiento) + '</td>'
+      + '<td><strong>' + item.cantidad + '</strong></td>'
+      + '<td><div style="display:flex;align-items:center;gap:6px">'
+      + '<input type="number" min="1" max="' + item.cantidad + '" value="1" id="trans-cant-' + item.lote_id + '" style="width:60px">'
+      + '<button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="agregarAlCarrito('' + item.lote_id + '','' + item.referencia + '','' + item.descripcion.replace(/'/g, ' ') + '',' + item.cantidad + ')">Agregar</button>'
+      + '</div></td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="6"><div class="empty"><p>Sin productos en esta ubicacion</p></div></td></tr>';
+}
+
+function filterTransferStock() { renderTransferStock(transStockData); }
+
+function agregarAlCarrito(loteId, ref, desc, cantMax) {
+  var cantEl = document.getElementById('trans-cant-' + loteId);
+  var cant = parseInt(cantEl ? cantEl.value : 1) || 1;
+  if (cant > cantMax) { showAlert('No hay suficiente stock. Disponible: ' + cantMax, 'error'); return; }
+  var existe = transCarrito.find(function(i) { return i.lote_id === loteId; });
+  if (existe) { existe.cantidad = cant; } else { transCarrito.push({lote_id: loteId, referencia: ref, descripcion: desc, cantidad: cant, cant_max: cantMax}); }
+  renderCarrito();
+}
+
+function renderCarrito() {
+  var card = document.getElementById('trans-carrito-card');
+  var body = document.getElementById('trans-carrito-body');
+  if (!transCarrito.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  body.innerHTML = transCarrito.map(function(item, idx) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-100)">'
+      + '<div><div style="font-size:13px;font-weight:500">' + item.referencia + '</div>'
+      + '<div style="font-size:11px;color:var(--text-3)">' + item.descripcion.substring(0,40) + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<input type="number" min="1" max="' + item.cant_max + '" value="' + item.cantidad + '" style="width:60px" onchange="transCarrito[' + idx + '].cantidad=parseInt(this.value)||1">'
+      + '<span style="font-size:12px;color:var(--text-3)">/ ' + item.cant_max + '</span>'
+      + '<button onclick="transCarrito.splice(' + idx + ',1);renderCarrito()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">X</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function limpiarCarrito() { transCarrito = []; renderCarrito(); }
+
+async function ejecutarTransferencia() {
+  var desde = document.getElementById('trans-desde').value;
+  var hasta = document.getElementById('trans-hasta').value;
+  if (!desde || !hasta) { showAlert('Selecciona origen y destino.', 'error'); return; }
+  if (desde === hasta) { showAlert('El origen y destino no pueden ser iguales.', 'error'); return; }
+  if (!transCarrito.length) { showAlert('Agrega al menos un producto.', 'error'); return; }
+  showAlert('Procesando transferencia...');
+  var errores = [];
+  var ok = 0;
+  for (var item of transCarrito) {
+    try {
+      await api('/stock/transferencia', { method:'POST', body: JSON.stringify({
+        lote_id: item.lote_id,
+        ubicacion_desde_id: desde,
+        ubicacion_hasta_id: hasta,
+        cantidad: item.cantidad,
+      })});
+      ok++;
+    } catch(e) { errores.push(item.referencia + ': ' + e.message); }
+  }
+  if (errores.length) {
+    showAlert('Completado con errores: ' + errores.join(' | '), 'error');
+  } else {
+    showAlert(ok + ' producto(s) transferidos correctamente.');
+    transCarrito = [];
+    renderCarrito();
+    loadTransferStock();
+  }
+}
+
+// Override saveNota to use lote_id from JSON in hidden field
+async function saveNota() {
+  var numero = document.getElementById('nota-numero').value.trim();
+  var fecha = document.getElementById('nota-fecha').value;
+  if (!numero || !fecha) { showAlert('El numero y la fecha son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('nota-items-body');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById('nota-lote-id-' + i);
+    var cantEl = document.getElementById('nota-cant-' + i);
+    if (hidden && hidden.value) {
+      try {
+        var d = JSON.parse(hidden.value);
+        if (!d.lote_id) { showAlert('Falta el ID del lote para ' + d.ref + '. Busca el lote de nuevo.', 'error'); return; }
+        items.push({ lote_id: d.lote_id, cantidad: parseInt(cantEl ? cantEl.value : 1)||1 });
+      } catch(e) {}
+    }
+  }
+  if (!items.length) { showAlert('Agrega al menos un producto usando el buscador.', 'error'); return; }
+  try {
+    await api('/notas/', { method:'POST', body: JSON.stringify({
+      numero: numero, fecha: fecha,
+      tipo: document.getElementById('nota-tipo').value,
+      direccion: document.getElementById('nota-dir').value,
+      cliente_id: document.getElementById('nota-cliente').value || null,
+      maleta_id: document.getElementById('nota-maleta').value || null,
+      bienes_titulo_de: document.getElementById('nota-titulo').value || null,
+      condiciones_pago: document.getElementById('nota-condiciones').value || null,
+      usuario_autoriza: document.getElementById('nota-autoriza').value || null,
+      usuario_entrega: document.getElementById('nota-entrega').value || null,
+      usuario_recibe: document.getElementById('nota-recibe').value || null,
+      items: items,
+    })});
+    closeModal('modal-nota');
+    showAlert('Nota de envio creada correctamente.');
+    document.getElementById('nota-items-body').innerHTML = '';
+    loadNotas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function saveFactura() {
+  var numero = document.getElementById('fac-numero').value.trim();
+  var fecha = document.getElementById('fac-fecha').value;
+  var cliente_id = document.getElementById('fac-cliente').value;
+  if (!numero || !fecha || !cliente_id) { showAlert('Numero, fecha y cliente son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('fac-items-body');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById('fac-lote-id-' + i);
+    var cantEl = document.getElementById('fac-cant-' + i);
+    if (hidden && hidden.value) {
+      try {
+        var d = JSON.parse(hidden.value);
+        if (!d.lote_id) { showAlert('Falta el ID del lote. Busca el lote de nuevo.', 'error'); return; }
+        items.push({ lote_id: d.lote_id, cantidad: parseInt(cantEl ? cantEl.value : 1)||1 });
+      } catch(e) {}
+    }
+  }
+  if (!items.length) { showAlert('Agrega al menos un producto usando el buscador.', 'error'); return; }
+  try {
+    await api('/facturas/', { method:'POST', body: JSON.stringify({
+      numero: numero, fecha: fecha, cliente_id: cliente_id,
+      tipo: document.getElementById('fac-tipo').value,
+      origen_tipo: document.getElementById('fac-origen').value,
+      observaciones: document.getElementById('fac-obs').value || null,
+      items: items,
+    })});
+    closeModal('modal-factura');
+    showAlert('Factura creada correctamente.');
+    document.getElementById('fac-items-body').innerHTML = '';
+    loadFacturas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function saveConsig() {
+  var cliente_id = document.getElementById('con-cliente').value;
+  var fecha = document.getElementById('con-fecha').value;
+  if (!cliente_id || !fecha) { showAlert('Cliente y fecha son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('con-items-body');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById('con-lote-id-' + i);
+    var cantEl = document.getElementById('con-cant-' + i);
+    if (hidden && hidden.value) {
+      try {
+        var d = JSON.parse(hidden.value);
+        if (!d.lote_id) { showAlert('Falta el ID del lote. Busca el lote de nuevo.', 'error'); return; }
+        items.push({ lote_id: d.lote_id, cantidad: parseInt(cantEl ? cantEl.value : 1)||1 });
+      } catch(e) {}
+    }
+  }
+  if (!items.length) { showAlert('Agrega al menos un producto usando el buscador.', 'error'); return; }
+  try {
+    await api('/consignaciones/', { method:'POST', body: JSON.stringify({
+      fecha: fecha, cliente_id: cliente_id,
+      observaciones: document.getElementById('con-obs').value || null,
+      items: items,
+    })});
+    closeModal('modal-consig');
+    showAlert('Consignacion registrada correctamente.');
+    document.getElementById('con-items-body').innerHTML = '';
+    loadConsig();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
 
 // ── INIT ──
