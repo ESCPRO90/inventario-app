@@ -1871,15 +1871,7 @@ async function loadNotas() {
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
-function addNotaItem() {
-  const tbody = document.getElementById('nota-items-body');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" placeholder="ID del lote (UUID)"></td>
-    <td><input type="number" min="1" value="1" style="width:80px"></td>
-    <td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">✕</button></td>`;
-  tbody.appendChild(tr);
-}
+// addNotaItem defined below
 
 async function saveNota() {
   const numero = document.getElementById('nota-numero').value.trim();
@@ -1929,15 +1921,7 @@ async function loadConsig() {
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
-function addConsigItem() {
-  const tbody = document.getElementById('con-items-body');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" placeholder="ID del lote (UUID)"></td>
-    <td><input type="number" min="1" value="1" style="width:80px"></td>
-    <td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">✕</button></td>`;
-  tbody.appendChild(tr);
-}
+// addConsigItem defined below
 
 async function saveConsig() {
   const cliente_id = document.getElementById('con-cliente').value;
@@ -1990,15 +1974,7 @@ async function loadFacturas() {
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
-function addFacturaItem() {
-  const tbody = document.getElementById('fac-items-body');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" placeholder="ID del lote (UUID)"></td>
-    <td><input type="number" min="1" value="1" style="width:80px"></td>
-    <td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">✕</button></td>`;
-  tbody.appendChild(tr);
-}
+// addFacturaItem defined below
 
 async function saveFactura() {
   const numero = document.getElementById('fac-numero').value.trim();
