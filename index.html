@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#e8f5ef">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23085041'/><text x='16' y='22' font-size='18' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>I</text></svg>" type="image/svg+xml">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Inventario">
@@ -831,7 +832,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Fecha</th><th>Proveedor</th><th>Fact. proveedor</th><th>Productos</th><th>Estado</th><th>Acciones</th></tr>
+              <tr><th>Fecha</th><th>Proveedor</th><th>Fact. proveedor</th><th>Acciones</th></tr>
             </thead>
             <tbody id="entradas-tbody">
               <tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>
@@ -1832,14 +1833,15 @@ async function loadEntradas() {
       }
     }
     const data = await api(url);
-    document.getElementById('entradas-tbody').innerHTML = data.length ? data.map(e => `
-      <tr>
-        <td>${fmt(e.fecha)}</td>
-        <td>${e.proveedor || '—'}</td>
-        <td class="mono">${e.numero_factura_proveedor || '—'}</td>
-        <td>${e.items ? e.items.length : '—'} producto(s)</td>
-        <td><span class="badge badge-teal">Registrada</span></td>
-      </tr>`).join('') : `<tr><td colspan="5"><div class="empty"><p>Sin entradas registradas</p></div></td></tr>`;
+    document.getElementById('entradas-tbody').innerHTML = data.length ? data.map(function(e) {
+      var eid = e.id;
+      return '<tr>'
+        + '<td>' + fmt(e.fecha) + '</td>'
+        + '<td>' + (e.proveedor || '-') + '</td>'
+        + '<td class="mono">' + (e.numero_factura_proveedor || '-') + '</td>'
+        + '<td><button class="btn btn-outline" style="font-size:12px;padding:5px 14px" onclick="verDetalleEntrada(\'' + eid + '\')">Ver detalle (' + (e.items ? e.items.length : 0) + ' prod.)</button></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="4"><div class="empty"><p>Sin entradas registradas</p></div></td></tr>';
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
