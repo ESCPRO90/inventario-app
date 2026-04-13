@@ -3702,7 +3702,7 @@ function addDetItem() {
     + '<td><input type="text" placeholder="N° lote" style="width:90px"></td>'
     + '<td><input type="date" style="width:120px"></td>'
     + '<td><input type="number" min="1" value="1" style="width:60px"></td>'
-    + '<td><button onclick="this.closest('tr').remove();checkDetItems()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:18px">X</button></td>';
+    + '<td><button onclick="this.closest(\'tr\').remove();checkDetItems()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:18px">X</button></td>';
   tbody.appendChild(tr);
   document.getElementById('det-save-btn').style.display = 'inline-flex';
 }
