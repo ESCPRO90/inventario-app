@@ -682,10 +682,6 @@
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Reportes PDF
     </div>
-    <div class="sidebar-item" data-page="reportes">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      Reportes PDF
-    </div>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -1072,85 +1068,7 @@
     </div>
 
     <!-- REPORTES -->
-    <div class="page" id="page-reportes">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Reportes PDF</div>
-          <div class="page-subtitle">Generá reportes descargables de tu inventario</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
-
-        <div class="card">
-          <div class="card-head"><div class="card-title">Inventario general de bodega</div></div>
-          <div style="padding:16px">
-            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Stock completo de bodega con lotes, cantidades y fechas de vencimiento.</div>
-            <button class="btn btn-primary" style="width:100%" onclick="reporteBodega()">Descargar PDF</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><div class="card-title">Inventario por maleta</div></div>
-          <div style="padding:16px">
-            <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Seleccioná la maleta:</div>
-            <select id="rep-maleta" style="width:100%;margin-bottom:10px">
-              <option value="URO">Maleta URO</option>
-              <option value="NEURO">Maleta NEURO</option>
-              <option value="VP1">Maleta VP1</option>
-              <option value="VP2">Maleta VP2</option>
-            </select>
-            <button class="btn btn-primary" style="width:100%" onclick="reporteMaleta()">Descargar PDF</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><div class="card-title">Productos vencidos y por vencer</div></div>
-          <div style="padding:16px">
-            <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Mostrar productos que venzan en:</div>
-            <select id="rep-dias" style="width:100%;margin-bottom:10px">
-              <option value="0">Solo vencidos</option>
-              <option value="30">30 dias</option>
-              <option value="60">60 dias</option>
-              <option value="90" selected>90 dias</option>
-              <option value="180">180 dias</option>
-            </select>
-            <button class="btn btn-primary" style="width:100%" onclick="reporteVencimientos()">Descargar PDF</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><div class="card-title">Consignaciones activas</div></div>
-          <div style="padding:16px">
-            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Listado de todos los productos en prestamo actualmente.</div>
-            <button class="btn btn-primary" style="width:100%" onclick="reporteConsignaciones()">Descargar PDF</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><div class="card-title">Notas de envio por periodo</div></div>
-          <div style="padding:16px">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde</div><input type="date" id="rep-notas-desde" style="width:100%"></div>
-              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta</div><input type="date" id="rep-notas-hasta" style="width:100%"></div>
-            </div>
-            <button class="btn btn-primary" style="width:100%" onclick="reporteNotas()">Descargar PDF</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><div class="card-title">Movimientos por periodo</div></div>
-          <div style="padding:16px">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde</div><input type="date" id="rep-mov-desde" style="width:100%"></div>
-              <div><div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta</div><input type="date" id="rep-mov-hasta" style="width:100%"></div>
-            </div>
-            <button class="btn btn-primary" style="width:100%" onclick="reporteMovimientos()">Descargar PDF</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
+  
     <!-- TRANSFERENCIAS -->
     <div class="page" id="page-transferencias">
       <div class="page-header">
@@ -1325,13 +1243,9 @@
           <label>Maleta destino</label>
           <select id="nota-maleta"><option value="">— Sin maleta —</option></select>
         </div>
-        <div class="form-group">
+        <div class="form-group full">
           <label>Bienes a título de</label>
           <input type="text" id="nota-titulo" placeholder="Nombre del titular">
-        </div>
-        <div class="form-group">
-          <label>Condiciones de pago</label>
-          <input type="text" id="nota-condiciones" placeholder="Ej: Crédito 30 días">
         </div>
         <div class="form-group">
           <label>Autoriza</label>
@@ -1986,7 +1900,7 @@ async function saveNota() {
       cliente_id: document.getElementById('nota-cliente').value || null,
       maleta_id: document.getElementById('nota-maleta').value || null,
       bienes_titulo_de: document.getElementById('nota-titulo').value || null,
-      condiciones_pago: document.getElementById('nota-condiciones').value || null,
+
       usuario_autoriza: document.getElementById('nota-autoriza').value || null,
       usuario_entrega: document.getElementById('nota-entrega').value || null,
       usuario_recibe: document.getElementById('nota-recibe').value || null,
@@ -2652,7 +2566,7 @@ async function saveNota() {
       cliente_id: document.getElementById('nota-cliente').value || null,
       maleta_id: document.getElementById('nota-maleta').value || null,
       bienes_titulo_de: document.getElementById('nota-titulo').value || null,
-      condiciones_pago: document.getElementById('nota-condiciones').value || null,
+
       usuario_autoriza: document.getElementById('nota-autoriza').value || null,
       usuario_entrega: document.getElementById('nota-entrega').value || null,
       usuario_recibe: document.getElementById('nota-recibe').value || null,
