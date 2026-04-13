@@ -3782,7 +3782,7 @@ async function abrirEditarEntrada() {
         + '<td><input type="text" value="' + (lote.numero_lote || '') + '" id="ei-lote-' + item.id + '" style="width:100px;font-size:12px"></td>'
         + '<td><input type="date" value="' + (lote.fecha_vencimiento || '') + '" id="ei-vence-' + item.id + '" style="font-size:12px"></td>'
         + '<td><input type="number" min="1" value="' + (item.cantidad || 0) + '" id="ei-cant-' + item.id + '" style="width:70px;font-size:12px"></td>'
-        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 8px;white-space:nowrap" onclick="guardarItem('' + item.id + '')">Guardar</button></td>';
+        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 8px;white-space:nowrap" onclick="guardarItem(\'' + item.id + '\')">Guardar</button></td>';
       document.getElementById('edit-items-tbody').appendChild(tr);
     });
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
