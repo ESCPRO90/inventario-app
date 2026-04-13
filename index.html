@@ -831,7 +831,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Fecha</th><th>Proveedor</th><th>Fact. proveedor</th><th>Productos</th><th>Acciones</th></tr>
+              <tr><th>Fecha</th><th>Proveedor</th><th>Fact. proveedor</th><th>Productos</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody id="entradas-tbody">
               <tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>
@@ -3657,6 +3657,98 @@ function generarPDFNotaProducto(nota) {
   showAlert('PDF de NE de Producto descargado.');
 }
 
+
+// ── DETALLE Y EDICION DE ENTRADA ──
+var currentEntradaId = null;
+
+async function verDetalleEntrada(entradaId) {
+  currentEntradaId = entradaId;
+  document.getElementById('det-items-tbody').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  document.getElementById('det-nuevos-tbody').innerHTML = '';
+  document.getElementById('det-save-btn').style.display = 'none';
+  openModal('modal-entrada-detalle');
+  try {
+    var entrada = await api('/entradas/' + entradaId);
+    document.getElementById('det-titulo').textContent = 'Entrada del ' + fmt(entrada.fecha);
+    document.getElementById('det-fecha').textContent = fmt(entrada.fecha);
+    document.getElementById('det-proveedor').textContent = entrada.proveedor || '-';
+    document.getElementById('det-factura-prov').textContent = entrada.numero_factura_proveedor || '-';
+    var items = entrada.items || [];
+    document.getElementById('det-items-tbody').innerHTML = items.length ? items.map(function(item) {
+      var lote = item.lote || {};
+      var prod = lote.producto || {};
+      var days = lote.fecha_vencimiento ? Math.floor((new Date(lote.fecha_vencimiento+'T00:00:00') - new Date())/86400000) : 9999;
+      var color = days < 0 ? 'color:#A32D2D' : days <= 60 ? 'color:#854F0B' : 'color:#27500A';
+      return '<tr>'
+        + '<td class="mono" style="font-size:12px">' + (prod.referencia||'-') + '</td>'
+        + '<td style="font-size:12px">' + (prod.descripcion||'-').substring(0,40) + '</td>'
+        + '<td class="mono" style="font-size:12px">' + (lote.numero_lote||'-') + '</td>'
+        + '<td style="font-size:12px;' + color + '">' + (lote.fecha_vencimiento ? fmt(lote.fecha_vencimiento) : '-') + '</td>'
+        + '<td><strong>' + (item.cantidad||0) + '</strong></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:20px">Sin productos</td></tr>';
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'error');
+    closeModal('modal-entrada-detalle');
+  }
+}
+
+function addDetItem() {
+  var tbody = document.getElementById('det-nuevos-tbody');
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td><input type="text" placeholder="Referencia" style="width:100%"></td>'
+    + '<td><input type="text" placeholder="Descripcion" style="width:100%"></td>'
+    + '<td><input type="text" placeholder="Cod. barras" style="width:80px"></td>'
+    + '<td><input type="text" placeholder="N° lote" style="width:90px"></td>'
+    + '<td><input type="date" style="width:120px"></td>'
+    + '<td><input type="number" min="1" value="1" style="width:60px"></td>'
+    + '<td><button onclick="this.closest('tr').remove();checkDetItems()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:18px">X</button></td>';
+  tbody.appendChild(tr);
+  document.getElementById('det-save-btn').style.display = 'inline-flex';
+}
+
+function checkDetItems() {
+  var tbody = document.getElementById('det-nuevos-tbody');
+  document.getElementById('det-save-btn').style.display = tbody.children.length > 0 ? 'inline-flex' : 'none';
+}
+
+async function saveDetItems() {
+  if (!currentEntradaId) return;
+  var tbody = document.getElementById('det-nuevos-tbody');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  rows.forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    if (inputs[0].value && inputs[3].value && inputs[4].value) {
+      items.push({
+        referencia: inputs[0].value.trim(),
+        descripcion: inputs[1].value.trim() || inputs[0].value.trim(),
+        codigo_barra: inputs[2].value.trim() || null,
+        numero_lote: inputs[3].value.trim(),
+        fecha_vencimiento: inputs[4].value,
+        cantidad: parseInt(inputs[5].value) || 1,
+      });
+    }
+  });
+  if (!items.length) { showAlert('Completa al menos un producto.', 'error'); return; }
+
+  // Get original entrada to get fecha and proveedor
+  try {
+    var entrada = await api('/entradas/' + currentEntradaId);
+    // Create a new entrada with same header but only new items
+    await api('/entradas/', { method: 'POST', body: JSON.stringify({
+      fecha: entrada.fecha,
+      proveedor: entrada.proveedor,
+      numero_factura_proveedor: entrada.numero_factura_proveedor,
+      observaciones: 'Agregado a entrada ' + currentEntradaId.substring(0,8) + '...',
+      items: items,
+    })});
+    closeModal('modal-entrada-detalle');
+    showAlert(items.length + ' producto(s) agregados al inventario correctamente.');
+    loadEntradas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -3684,5 +3776,45 @@ checkSession();
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- MODAL DETALLE ENTRADA -->
+<div class="modal-overlay" id="modal-entrada-detalle">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-head">
+      <div class="modal-title" id="det-titulo">Detalle de entrada</div>
+      <button class="modal-close" onclick="closeModal('modal-entrada-detalle')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;padding:12px;background:var(--color-background-secondary);border-radius:8px">
+        <div><div style="font-size:11px;color:var(--text-2)">Fecha</div><div style="font-size:14px;font-weight:500" id="det-fecha"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Proveedor</div><div style="font-size:14px;font-weight:500" id="det-proveedor"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Fact. proveedor</div><div style="font-size:14px;font-weight:500" id="det-factura-prov"></div></div>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--teal-800);margin-bottom:8px">Productos registrados</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Referencia</th><th>Descripcion</th><th>Lote</th><th>Vencimiento</th><th>Cantidad</th></tr>
+          </thead>
+          <tbody id="det-items-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:13px;font-weight:500;color:var(--teal-800);margin-bottom:8px">Agregar mas productos a esta entrada</div>
+        <table class="items-table">
+          <thead>
+            <tr><th>Referencia</th><th>Descripcion</th><th>Cod. barras</th><th>Lote</th><th>Vence</th><th>Cant.</th><th></th></tr>
+          </thead>
+          <tbody id="det-nuevos-tbody"></tbody>
+        </table>
+        <button class="btn btn-outline" style="margin-top:8px;font-size:12px" onclick="addDetItem()">+ Agregar producto</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-entrada-detalle')">Cerrar</button>
+      <button class="btn btn-primary" id="det-save-btn" onclick="saveDetItems()" style="display:none">Guardar nuevos productos</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
