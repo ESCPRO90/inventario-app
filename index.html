@@ -1866,8 +1866,8 @@ async function loadNotas() {
         + '<td>' + (n.cliente ? n.cliente.nombre : (n.maleta ? n.maleta.nombre : '-')) + '</td>'
         + '<td><span class="badge ' + (estados[n.estado]||'badge-gray') + '">' + n.estado + '</span></td>'
         + '<td><span class="badge ' + (n.direccion==='ENTRADA'?'badge-amber':'badge-teal') + '">' + n.direccion + '</span></td>'
-        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="imprimirNota('' + notaId + '','' + notaTipo + '')">PDF</button></td>'
-        + '</tr>';}).join('') : `<tr><td colspan="6"><div class="empty"><p>Sin notas de envío</p></div></td></tr>`;
+        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="imprimirNota(\'' + notaId + '\',\'' + notaTipo + '\')">PDF</button></td>'
+        + '</tr>';}).join('') : '<tr><td colspan="7"><div class="empty"><p>Sin notas de envio</p></div></td></tr>';
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
