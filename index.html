@@ -3751,6 +3751,77 @@ async function saveDetItems() {
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
 
+
+// ── EDITAR ENTRADA ──
+
+async function abrirEditarEntrada() {
+  if (!currentEntradaId) return;
+  closeModal('modal-entrada-detalle');
+  openModal('modal-editar-entrada');
+  document.getElementById('edit-items-tbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  try {
+    var entrada = await api('/entradas/' + currentEntradaId);
+    // Llenar encabezado
+    document.getElementById('edit-fecha').value = entrada.fecha;
+    document.getElementById('edit-proveedor').value = entrada.proveedor || '';
+    document.getElementById('edit-factura-prov').value = entrada.numero_factura_proveedor || '';
+    // Llenar productos
+    var items = entrada.items || [];
+    if (!items.length) {
+      document.getElementById('edit-items-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-3)">Sin productos</td></tr>';
+      return;
+    }
+    document.getElementById('edit-items-tbody').innerHTML = '';
+    items.forEach(function(item) {
+      var lote = item.lote || {};
+      var prod = lote.producto || {};
+      var tr = document.createElement('tr');
+      tr.id = 'edit-item-' + item.id;
+      tr.innerHTML = '<td class="mono" style="font-size:12px">' + (prod.referencia || '-') + '</td>'
+        + '<td><input type="text" value="' + (prod.descripcion || '').replace(/"/g, '&quot;') + '" id="ei-desc-' + item.id + '" style="width:100%;font-size:12px"></td>'
+        + '<td><input type="text" value="' + (lote.numero_lote || '') + '" id="ei-lote-' + item.id + '" style="width:100px;font-size:12px"></td>'
+        + '<td><input type="date" value="' + (lote.fecha_vencimiento || '') + '" id="ei-vence-' + item.id + '" style="font-size:12px"></td>'
+        + '<td><input type="number" min="1" value="' + (item.cantidad || 0) + '" id="ei-cant-' + item.id + '" style="width:70px;font-size:12px"></td>'
+        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 8px;white-space:nowrap" onclick="guardarItem('' + item.id + '')">Guardar</button></td>';
+      document.getElementById('edit-items-tbody').appendChild(tr);
+    });
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function guardarEncabezado() {
+  if (!currentEntradaId) return;
+  var fecha = document.getElementById('edit-fecha').value;
+  var proveedor = document.getElementById('edit-proveedor').value.trim();
+  var factProv = document.getElementById('edit-factura-prov').value.trim();
+  if (!fecha) { showAlert('La fecha es requerida.', 'error'); return; }
+  try {
+    await api('/entradas/' + currentEntradaId + '/encabezado', {
+      method: 'PATCH',
+      body: JSON.stringify({ fecha: fecha, proveedor: proveedor, numero_factura_proveedor: factProv }),
+    });
+    showAlert('Encabezado actualizado correctamente.');
+    loadEntradas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function guardarItem(itemId) {
+  var desc  = document.getElementById('ei-desc-'  + itemId).value.trim();
+  var lote  = document.getElementById('ei-lote-'  + itemId).value.trim();
+  var vence = document.getElementById('ei-vence-' + itemId).value;
+  var cant  = parseInt(document.getElementById('ei-cant-'  + itemId).value) || 0;
+  if (!lote || !vence || cant < 1) { showAlert('Completa todos los campos del producto.', 'error'); return; }
+  try {
+    await api('/entradas/items/' + itemId, {
+      method: 'PATCH',
+      body: JSON.stringify({ descripcion: desc, numero_lote: lote, fecha_vencimiento: vence, cantidad: cant }),
+    });
+    // Visual feedback
+    var row = document.getElementById('edit-item-' + itemId);
+    if (row) { row.style.background = '#e1f5ee'; setTimeout(function(){ row.style.background=''; }, 1500); }
+    showAlert('Producto actualizado.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -3814,7 +3885,63 @@ checkSession();
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('modal-entrada-detalle')">Cerrar</button>
+      <button class="btn btn-outline" onclick="abrirEditarEntrada()" style="margin-left:auto;margin-right:8px">Editar entrada</button>
       <button class="btn btn-primary" id="det-save-btn" onclick="saveDetItems()" style="display:none">Guardar nuevos productos</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR ENTRADA -->
+<div class="modal-overlay" id="modal-editar-entrada">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head">
+      <div class="modal-title">Editar entrada</div>
+      <button class="modal-close" onclick="closeModal('modal-editar-entrada')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Encabezado editable -->
+      <div style="background:var(--teal-50);border:1px solid var(--teal-100);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--teal-800);margin-bottom:10px">DATOS DE LA ENTRADA</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" id="edit-fecha">
+          </div>
+          <div class="form-group">
+            <label>Proveedor</label>
+            <input type="text" id="edit-proveedor" placeholder="Nombre del proveedor">
+          </div>
+          <div class="form-group">
+            <label>Fact. proveedor</label>
+            <input type="text" id="edit-factura-prov" placeholder="N° factura">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-primary" style="font-size:12px" onclick="guardarEncabezado()">Guardar encabezado</button>
+        </div>
+      </div>
+
+      <!-- Productos editables -->
+      <div style="font-size:12px;font-weight:600;color:var(--teal-800);margin-bottom:8px">PRODUCTOS</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Referencia</th>
+              <th>Descripcion</th>
+              <th>Lote</th>
+              <th>Vencimiento</th>
+              <th>Cantidad</th>
+              <th>Guardar</th>
+            </tr>
+          </thead>
+          <tbody id="edit-items-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-editar-entrada')">Cerrar</button>
     </div>
   </div>
 </div>
