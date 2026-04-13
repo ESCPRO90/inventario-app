@@ -2623,6 +2623,630 @@ async function saveConsig() {
 }
 
 
+
+// ── PDF NOTAS DE ENVIO — FORMATO EXACTO ──
+
+async function imprimirNota(notaId, tipo) {
+  showAlert('Generando PDF...');
+  try {
+    var nota = await api('/notas/' + notaId);
+    if (tipo === 'NE_PRODUCTO') {
+      generarPDFNotaProducto(nota);
+    } else {
+      generarPDFNotaEnvio(nota);
+    }
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+// ─── HELPERS COMUNES ───────────────────────────────────────────
+
+function drawMembrete(doc, titulo, numero) {
+  // Borde exterior del formulario
+  doc.setDrawColor(40, 40, 40);
+  doc.setLineWidth(0.8);
+  doc.rect(8, 8, 194, 281);
+
+  // Encabezado verde oscuro
+  doc.setFillColor(8, 80, 65);
+  doc.rect(8, 8, 194, 28, 'F');
+
+  // Logo ANEQSA
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ANEQSA', 14, 22);
+
+  // Datos empresa
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('ANESTESIOLOGIA EN EQUIPO, S.A. DE C.V.', 14, 28);
+  doc.text('11 Calle Pte., Calle El Mirador #4040 entre 77 y 79 Av. Norte, Col. Escalon, San Salvador', 14, 32);
+  doc.text('PBX: (503) 2536-0700  FAX: (503) 2263-3024  e-mail: aneqsa.recepcion@gmail.com', 14, 36);
+
+  // Caja tipo de documento (derecha)
+  doc.setFillColor(255, 255, 255);
+  doc.rect(145, 10, 55, 24, 'F');
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(145, 10, 55, 24);
+  doc.setTextColor(8, 80, 65);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text(titulo, 172, 17, {align: 'center'});
+  doc.setFontSize(8);
+  doc.setTextColor(180, 50, 50);
+  doc.text('N°', 155, 25);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(String(numero || '').padStart(4, '0'), 165, 30);
+}
+
+function drawLineField(doc, label, value, x, y, lineEnd, opts) {
+  opts = opts || {};
+  var labelSize = opts.labelSize || 7.5;
+  var valueSize = opts.valueSize || 8;
+  var labelX = x;
+  var valueX = x + (opts.offset || (label.length * 1.8 + 2));
+
+  doc.setFontSize(labelSize);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  doc.text(label + ':', labelX, y);
+
+  doc.setFontSize(valueSize);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(10, 10, 10);
+  if (value) doc.text(String(value).substring(0, opts.maxChars || 50), valueX, y);
+
+  doc.setDrawColor(140, 140, 140);
+  doc.setLineWidth(0.3);
+  doc.line(valueX - 1, y + 1, lineEnd, y + 1);
+}
+
+function drawTableHeader(doc, cols, y, rowH) {
+  rowH = rowH || 7;
+  doc.setFillColor(8, 80, 65);
+  doc.rect(cols[0].x, y, cols[cols.length-1].x + cols[cols.length-1].w - cols[0].x, rowH, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  cols.forEach(function(col) {
+    doc.text(col.label, col.x + 2, y + 5);
+  });
+  return y + rowH;
+}
+
+function drawTableRow(doc, cols, values, y, rowH, idx) {
+  rowH = rowH || 7;
+  var totalW = cols[cols.length-1].x + cols[cols.length-1].w - cols[0].x;
+  if (idx % 2 === 0) {
+    doc.setFillColor(232, 245, 239);
+    doc.rect(cols[0].x, y, totalW, rowH, 'F');
+  }
+  doc.setDrawColor(180, 220, 200);
+  doc.setLineWidth(0.2);
+  doc.rect(cols[0].x, y, totalW, rowH);
+  // vertical dividers
+  cols.slice(1).forEach(function(col) {
+    doc.line(col.x, y, col.x, y + rowH);
+  });
+  doc.setTextColor(20, 20, 20);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  cols.forEach(function(col, i) {
+    var val = String(values[i] || '');
+    var maxC = Math.floor(col.w / 1.9);
+    doc.text(val.substring(0, maxC), col.x + 2, y + 5);
+  });
+  return y + rowH;
+}
+
+function drawEmptyRows(doc, cols, y, count, startIdx, rowH) {
+  rowH = rowH || 7;
+  for (var i = 0; i < count; i++) {
+    var idx = startIdx + i;
+    var totalW = cols[cols.length-1].x + cols[cols.length-1].w - cols[0].x;
+    if (idx % 2 === 0) {
+      doc.setFillColor(232, 245, 239);
+      doc.rect(cols[0].x, y, totalW, rowH, 'F');
+    }
+    doc.setDrawColor(180, 220, 200);
+    doc.setLineWidth(0.2);
+    doc.rect(cols[0].x, y, totalW, rowH);
+    cols.slice(1).forEach(function(col) {
+      doc.line(col.x, y, col.x, y + rowH);
+    });
+    y += rowH;
+  }
+  return y;
+}
+
+// ─── FORMULARIO 2: NOTA DE ENVIO (con lotes) ─────────────────
+
+function generarPDFNotaEnvio(nota) {
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  drawMembrete(doc, 'NOTA DE ENVIO', nota.numero);
+
+  var y = 46;
+
+  // Datos del destinatario
+  var cliente = nota.cliente || {};
+  var senor = cliente.nombre || '';
+  var fecha = fmt(nota.fecha);
+  var registro = cliente.registro_nit || '';
+  var giro = cliente.giro || '';
+  var despacho = nota.bienes_titulo_de || '';
+
+  // Fila 1: Señor + Fecha
+  drawLineField(doc, 'Senor', senor, 14, y, 135, {offset: 12, maxChars: 45});
+  drawLineField(doc, 'Fecha', fecha, 140, y, 200, {offset: 10});
+  y += 7;
+
+  // Fila 2: Registro N° + Giro
+  drawLineField(doc, 'Registro N', registro, 14, y, 90, {offset: 20, maxChars: 20});
+  drawLineField(doc, 'Giro', giro, 95, y, 200, {offset: 8, maxChars: 35});
+  y += 7;
+
+  // Fila 3: Despacho a título de
+  drawLineField(doc, 'Despacho a Titulo de', despacho, 14, y, 200, {offset: 36, maxChars: 55});
+  y += 8;
+
+  // Línea separadora verde
+  doc.setDrawColor(8, 80, 65);
+  doc.setLineWidth(0.5);
+  doc.line(8, y, 202, y);
+  y += 3;
+  doc.setLineWidth(0.2);
+
+  // Tabla productos
+  var COLS = [
+    {label: 'REFERENCIA',               x: 9,   w: 32},
+    {label: 'CANT.',                     x: 41,  w: 12},
+    {label: 'DESCRIPCION DEL PRODUCTO', x: 53,  w: 70},
+    {label: 'N° DE LOTE',               x: 123, w: 38},
+    {label: 'VENCE',                     x: 161, w: 41},
+  ];
+
+  y = drawTableHeader(doc, COLS, y, 7);
+
+  var items = nota.items || [];
+  var ROW_H = 7;
+
+  items.forEach(function(item, idx) {
+    if (y > 225) {
+      doc.addPage();
+      drawMembrete(doc, 'NOTA DE ENVIO', nota.numero);
+      y = 50;
+      y = drawTableHeader(doc, COLS, y, 7);
+    }
+    var lote = item.lote || {};
+    var prod = lote.producto || {};
+    y = drawTableRow(doc, COLS, [
+      prod.referencia || '',
+      String(item.cantidad || 0),
+      prod.descripcion || '',
+      lote.numero_lote || '',
+      lote.fecha_vencimiento ? fmt(lote.fecha_vencimiento) : '',
+    ], y, ROW_H, idx);
+  });
+
+  // Filas vacías mínimo 8
+  var minRows = 8;
+  if (items.length < minRows) {
+    y = drawEmptyRows(doc, COLS, y, minRows - items.length, items.length, ROW_H);
+  }
+
+  y += 6;
+
+  // Sección de firmas — 3 columnas
+  var sigY = y;
+  var col1 = 14, col2 = 80, col3 = 146;
+  var lineLen = 55;
+
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(60, 60, 60);
+  doc.line(col1, sigY + 12, col1 + lineLen, sigY + 12);
+  doc.line(col2, sigY + 12, col2 + lineLen, sigY + 12);
+  doc.line(col3, sigY + 12, col3 + lineLen, sigY + 12);
+
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(8, 80, 65);
+  doc.text('AUTORIZO', col1 + 18, sigY + 17);
+  doc.text('ENTREGO', col2 + 20, sigY + 17);
+  doc.text('RECIBIO', col3 + 20, sigY + 17);
+
+  // Nombres si existen
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(40, 40, 40);
+  doc.setFontSize(7);
+  if (nota.usuario_autoriza) doc.text(nota.usuario_autoriza.substring(0,20), col1, sigY + 9);
+  if (nota.usuario_entrega)  doc.text(nota.usuario_entrega.substring(0,20),  col2, sigY + 9);
+  if (nota.usuario_recibe)   doc.text(nota.usuario_recibe.substring(0,20),   col3, sigY + 9);
+
+  y = sigY + 22;
+
+  // Pie de página
+  doc.setFontSize(6.5);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Original - Cliente - blanco  /  Duplicado - Emisor - rosado  /  Triplicado - Cliente - celeste', 14, y);
+
+  doc.save('nota-envio-' + nota.numero + '.pdf');
+  showAlert('Nota de Envio descargada.');
+}
+
+// ─── FORMULARIO 1: NOTA DE ENVIO DE PRODUCTO ─────────────────
+
+function generarPDFNotaProducto(nota) {
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  drawMembrete(doc, 'NOTA DE ENVIO DE PRODUCTO', nota.numero);
+
+  var y = 46;
+
+  var cliente = nota.cliente || {};
+  var nombre   = cliente.nombre || '';
+  var dir      = cliente.direccion || '';
+  var depto    = cliente.departamento || '';
+  var nit      = cliente.registro_nit || '';
+  var registro = cliente.registro_nit || '';
+  var giro     = cliente.giro || '';
+  var bienes   = nota.bienes_titulo_de || '';
+  var fecha    = fmt(nota.fecha);
+
+  // Fila 1: Nombre + Fecha
+  drawLineField(doc, 'Nombre', nombre, 14, y, 135, {offset: 12, maxChars: 44});
+  drawLineField(doc, 'Fecha', fecha, 140, y, 200, {offset: 10});
+  y += 7;
+
+  // Fila 2: Dirección + Registro N°
+  drawLineField(doc, 'Direccion', dir, 14, y, 128, {offset: 16, maxChars: 40});
+  drawLineField(doc, 'Registro N', registro, 132, y, 200, {offset: 20, maxChars: 18});
+  y += 7;
+
+  // Fila 3: Departamento + NIT + Giro
+  drawLineField(doc, 'Departamento', depto, 14, y, 75, {offset: 22, maxChars: 18});
+  drawLineField(doc, 'NIT', nit, 78, y, 125, {offset: 7, maxChars: 16});
+  drawLineField(doc, 'Giro', giro, 128, y, 200, {offset: 8, maxChars: 24});
+  y += 7;
+
+  // Fila 4: Bienes a título de
+  drawLineField(doc, 'Bienes a Titulo de', bienes, 14, y, 200, {offset: 32, maxChars: 60});
+  y += 8;
+
+  // Línea separadora
+  doc.setDrawColor(8, 80, 65);
+  doc.setLineWidth(0.5);
+  doc.line(8, y, 202, y);
+  y += 3;
+  doc.setLineWidth(0.2);
+
+  // Tabla: CANT | REFERENCIA | DESCRIPCIÓN | LOTE | VENCE
+  var COLS2 = [
+    {label: 'CANT.',                        x: 9,   w: 14},
+    {label: 'REFERENCIA',                   x: 23,  w: 30},
+    {label: 'DESCRIPCION DE LA MERCADERIA', x: 53,  w: 70},
+    {label: 'N° DE LOTE',                   x: 123, w: 38},
+    {label: 'VENCE',                         x: 161, w: 41},
+  ];
+
+  y = drawTableHeader(doc, COLS2, y, 7);
+
+  var items = nota.items || [];
+  var ROW_H = 7;
+
+  items.forEach(function(item, idx) {
+    if (y > 225) {
+      doc.addPage();
+      drawMembrete(doc, 'NOTA DE ENVIO DE PRODUCTO', nota.numero);
+      y = 50;
+      y = drawTableHeader(doc, COLS2, y, 7);
+    }
+    var lote = item.lote || {};
+    var prod = lote.producto || {};
+    y = drawTableRow(doc, COLS2, [
+      String(item.cantidad || 0),
+      prod.referencia || '',
+      prod.descripcion || '',
+      lote.numero_lote || '',
+      lote.fecha_vencimiento ? fmt(lote.fecha_vencimiento) : '',
+    ], y, ROW_H, idx);
+  });
+
+  // Filas vacías mínimo 10
+  var minRows = 10;
+  if (items.length < minRows) {
+    y = drawEmptyRows(doc, COLS2, y, minRows - items.length, items.length, ROW_H);
+  }
+
+  y += 6;
+
+  // Firmas — 2 líneas
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(60, 60, 60);
+
+  // Entregado por
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  doc.text('Entregado por:', 14, y + 12);
+  doc.line(36, y + 12, 120, y + 12);
+  if (nota.usuario_entrega) {
+    doc.setTextColor(10, 10, 10);
+    doc.text(nota.usuario_entrega.substring(0, 30), 38, y + 11);
+  }
+  doc.setTextColor(60, 60, 60);
+  doc.text('Fecha', 124, y + 12);
+  doc.line(134, y + 12, 200, y + 12);
+  doc.text(fmt(nota.fecha), 136, y + 11);
+  y += 10;
+
+  // Recibido por
+  doc.setTextColor(60, 60, 60);
+  doc.text('Recibido por:', 14, y + 12);
+  doc.line(36, y + 12, 200, y + 12);
+  if (nota.usuario_recibe) {
+    doc.setTextColor(10, 10, 10);
+    doc.text(nota.usuario_recibe.substring(0, 45), 38, y + 11);
+  }
+  y += 10;
+
+  // Firma y sello
+  doc.setTextColor(60, 60, 60);
+  doc.text('Firma y Sello del Emisor:', 14, y + 12);
+  doc.line(50, y + 12, 200, y + 12);
+
+  y += 18;
+
+  // Pie
+  doc.setFontSize(6.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text('Original - Cliente - blanco  /  Duplicado - Emisor - verde  /  Triplicado - Cliente - rosado', 14, y);
+
+  doc.save('ne-producto-' + nota.numero + '.pdf');
+  showAlert('NE de Producto descargada.');
+}
+
+
+// ── TRANSFERENCIAS ──
+var transStockData = [];
+var transCarrito = [];
+
+async function loadTransferUbicaciones() {
+  try {
+    var data = await api('/stock/ubicaciones/todas');
+    var opts = data.map(function(u) { return '<option value="' + u.id + '" data-tipo="' + u.tipo + '">' + u.nombre + '</option>'; }).join('');
+    document.getElementById('trans-desde').innerHTML = '<option value="">-- Seleccionar origen --</option>' + opts;
+    document.getElementById('trans-hasta').innerHTML = '<option value="">-- Seleccionar destino --</option>' + opts;
+  } catch(e) { showAlert('Error cargando ubicaciones: ' + e.message, 'error'); }
+}
+
+async function loadTransferStock() {
+  var ubicId = document.getElementById('trans-desde').value;
+  if (!ubicId) return;
+  document.getElementById('trans-stock-tbody').innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  try {
+    var data = await api('/lotes/buscar?solo_con_stock=true');
+    transStockData = data.filter(function(i) { return i.ubicacion_id === ubicId; });
+    renderTransferStock(transStockData);
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+function renderTransferStock(data) {
+  var q = document.getElementById('trans-search').value.toLowerCase();
+  var filtered = q ? data.filter(function(i) {
+    return i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q);
+  }) : data;
+  var tbody = document.getElementById('trans-stock-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><p>Sin productos en esta ubicacion</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  filtered.forEach(function(item) {
+    var days = Math.floor((new Date(item.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+    var clr = days < 0 ? '#E24B4A' : days <= 60 ? '#E24B4A' : days <= 90 ? '#EF9F27' : '#1D9E75';
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="mono" style="font-size:12px">' + item.referencia + '</td>'
+      + '<td style="font-size:12px">' + item.descripcion.substring(0,35) + '</td>'
+      + '<td class="mono" style="font-size:11px">' + item.numero_lote + '</td>'
+      + '<td style="font-size:12px;color:' + clr + '">' + fmt(item.fecha_vencimiento) + '</td>'
+      + '<td><strong>' + item.cantidad + '</strong></td>'
+      + '<td><div style="display:flex;align-items:center;gap:6px">'
+      + '<input type="number" min="1" max="' + item.cantidad + '" value="1" id="tc-' + item.lote_id + '" style="width:60px">'
+      + '<button class="btn btn-outline" style="font-size:11px;padding:3px 10px"'
+      + ' data-lid="' + item.lote_id + '" data-ref="' + item.referencia.replace(/"/g,'') + '" data-max="' + item.cantidad + '"'
+      + ' onclick="addToCart(this)">Agregar</button>'
+      + '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function addToCart(btn) {
+  var lid = btn.getAttribute('data-lid');
+  var ref = btn.getAttribute('data-ref');
+  var max = parseInt(btn.getAttribute('data-max'));
+  var cantEl = document.getElementById('tc-' + lid);
+  var cant = parseInt(cantEl ? cantEl.value : 1) || 1;
+  if (cant > max) { showAlert('Stock insuficiente. Disponible: ' + max, 'error'); return; }
+  var item = transStockData.find(function(i) { return i.lote_id === lid; });
+  var desc = item ? item.descripcion : ref;
+  var existe = transCarrito.find(function(i) { return i.lote_id === lid; });
+  if (existe) { existe.cantidad = cant; } else { transCarrito.push({lote_id:lid, referencia:ref, descripcion:desc, cantidad:cant, cant_max:max}); }
+  renderCarrito();
+  showAlert(ref + ' agregado al carrito.');
+}
+function filterTransferStock() { renderTransferStock(transStockData); }
+
+function agregarAlCarrito(loteId, ref, desc, cantMax, cant) {
+  cant = cant || 1;
+  if (cant > cantMax) { showAlert('No hay suficiente stock. Disponible: ' + cantMax, 'error'); return; }
+  var existe = transCarrito.find(function(i) { return i.lote_id === loteId; });
+  if (existe) { existe.cantidad = cant; } else { transCarrito.push({lote_id: loteId, referencia: ref, descripcion: desc, cantidad: cant, cant_max: cantMax}); }
+  renderCarrito();
+}
+
+function renderCarrito() {
+  var card = document.getElementById('trans-carrito-card');
+  var body = document.getElementById('trans-carrito-body');
+  if (!transCarrito.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  body.innerHTML = transCarrito.map(function(item, idx) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-100)">'
+      + '<div><div style="font-size:13px;font-weight:500">' + item.referencia + '</div>'
+      + '<div style="font-size:11px;color:var(--text-3)">' + item.descripcion.substring(0,40) + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<input type="number" min="1" max="' + item.cant_max + '" value="' + item.cantidad + '" style="width:60px" onchange="transCarrito[' + idx + '].cantidad=parseInt(this.value)||1">'
+      + '<span style="font-size:12px;color:var(--text-3)">/ ' + item.cant_max + '</span>'
+      + '<button onclick="transCarrito.splice(' + idx + ',1);renderCarrito()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">X</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function limpiarCarrito() { transCarrito = []; renderCarrito(); }
+
+async function ejecutarTransferencia() {
+  var desde = document.getElementById('trans-desde').value;
+  var hasta = document.getElementById('trans-hasta').value;
+  if (!desde || !hasta) { showAlert('Selecciona origen y destino.', 'error'); return; }
+  if (desde === hasta) { showAlert('El origen y destino no pueden ser iguales.', 'error'); return; }
+  if (!transCarrito.length) { showAlert('Agrega al menos un producto.', 'error'); return; }
+  showAlert('Procesando transferencia...');
+  var errores = [];
+  var ok = 0;
+  for (var item of transCarrito) {
+    try {
+      await api('/stock/transferencia', { method:'POST', body: JSON.stringify({
+        lote_id: item.lote_id,
+        ubicacion_desde_id: desde,
+        ubicacion_hasta_id: hasta,
+        cantidad: item.cantidad,
+      })});
+      ok++;
+    } catch(e) { errores.push(item.referencia + ': ' + e.message); }
+  }
+  if (errores.length) {
+    showAlert('Completado con errores: ' + errores.join(' | '), 'error');
+  } else {
+    showAlert(ok + ' producto(s) transferidos correctamente.');
+    transCarrito = [];
+    renderCarrito();
+    loadTransferStock();
+  }
+}
+
+// Override saveNota to use lote_id from JSON in hidden field
+async function saveNota() {
+  var numero = document.getElementById('nota-numero').value.trim();
+  var fecha = document.getElementById('nota-fecha').value;
+  if (!numero || !fecha) { showAlert('El numero y la fecha son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('nota-items-body');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById('nota-lote-id-' + i);
+    var cantEl = document.getElementById('nota-cant-' + i);
+    if (hidden && hidden.value) {
+      try {
+        var d = JSON.parse(hidden.value);
+        if (!d.lote_id) { showAlert('Falta el ID del lote para ' + d.ref + '. Busca el lote de nuevo.', 'error'); return; }
+        items.push({ lote_id: d.lote_id, cantidad: parseInt(cantEl ? cantEl.value : 1)||1 });
+      } catch(e) {}
+    }
+  }
+  if (!items.length) { showAlert('Agrega al menos un producto usando el buscador.', 'error'); return; }
+  try {
+    await api('/notas/', { method:'POST', body: JSON.stringify({
+      numero: numero, fecha: fecha,
+      tipo: document.getElementById('nota-tipo').value,
+      direccion: document.getElementById('nota-dir').value,
+      cliente_id: document.getElementById('nota-cliente').value || null,
+      maleta_id: document.getElementById('nota-maleta').value || null,
+      bienes_titulo_de: document.getElementById('nota-titulo').value || null,
+
+      usuario_autoriza: document.getElementById('nota-autoriza').value || null,
+      usuario_entrega: document.getElementById('nota-entrega').value || null,
+      usuario_recibe: document.getElementById('nota-recibe').value || null,
+      items: items,
+    })});
+    closeModal('modal-nota');
+    showAlert('Nota de envio creada correctamente.');
+    document.getElementById('nota-items-body').innerHTML = '';
+    loadNotas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function saveFactura() {
+  var numero = document.getElementById('fac-numero').value.trim();
+  var fecha = document.getElementById('fac-fecha').value;
+  var cliente_id = document.getElementById('fac-cliente').value;
+  if (!numero || !fecha || !cliente_id) { showAlert('Numero, fecha y cliente son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('fac-items-body');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById('fac-lote-id-' + i);
+    var cantEl = document.getElementById('fac-cant-' + i);
+    if (hidden && hidden.value) {
+      try {
+        var d = JSON.parse(hidden.value);
+        if (!d.lote_id) { showAlert('Falta el ID del lote. Busca el lote de nuevo.', 'error'); return; }
+        items.push({ lote_id: d.lote_id, cantidad: parseInt(cantEl ? cantEl.value : 1)||1 });
+      } catch(e) {}
+    }
+  }
+  if (!items.length) { showAlert('Agrega al menos un producto usando el buscador.', 'error'); return; }
+  try {
+    await api('/facturas/', { method:'POST', body: JSON.stringify({
+      numero: numero, fecha: fecha, cliente_id: cliente_id,
+      tipo: document.getElementById('fac-tipo').value,
+      origen_tipo: document.getElementById('fac-origen').value,
+      observaciones: document.getElementById('fac-obs').value || null,
+      items: items,
+    })});
+    closeModal('modal-factura');
+    showAlert('Factura creada correctamente.');
+    document.getElementById('fac-items-body').innerHTML = '';
+    loadFacturas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function saveConsig() {
+  var cliente_id = document.getElementById('con-cliente').value;
+  var fecha = document.getElementById('con-fecha').value;
+  if (!cliente_id || !fecha) { showAlert('Cliente y fecha son requeridos.', 'error'); return; }
+  var tbody = document.getElementById('con-items-body');
+  var rows = tbody.querySelectorAll('tr');
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var hidden = document.getElementById('con-lote-id-' + i);
+    var cantEl = document.getElementById('con-cant-' + i);
+    if (hidden && hidden.value) {
+      try {
+        var d = JSON.parse(hidden.value);
+        if (!d.lote_id) { showAlert('Falta el ID del lote. Busca el lote de nuevo.', 'error'); return; }
+        items.push({ lote_id: d.lote_id, cantidad: parseInt(cantEl ? cantEl.value : 1)||1 });
+      } catch(e) {}
+    }
+  }
+  if (!items.length) { showAlert('Agrega al menos un producto usando el buscador.', 'error'); return; }
+  try {
+    await api('/consignaciones/', { method:'POST', body: JSON.stringify({
+      fecha: fecha, cliente_id: cliente_id,
+      observaciones: document.getElementById('con-obs').value || null,
+      items: items,
+    })});
+    closeModal('modal-consig');
+    showAlert('Consignacion registrada correctamente.');
+    document.getElementById('con-items-body').innerHTML = '';
+    loadConsig();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+
 // ── PDF NOTAS DE ENVIO ──
 
 async function imprimirNota(notaId, tipo) {
