@@ -545,6 +545,25 @@
   .ud-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.5; }
   .ud-item.danger { color: var(--red-800); }
   .ud-item.danger:hover { background: var(--red-50); }
+
+  .mas-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background .1s;
+    border-bottom: 1px solid var(--border);
+  }
+  .mas-item:last-child { border-bottom: none; }
+  .mas-item:hover, .mas-item:active { background: var(--teal-50); color: var(--teal-800); }
+  .mas-item svg {
+    width: 18px; height: 18px;
+    stroke: currentColor; fill: none; stroke-width: 1.8;
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -854,6 +873,24 @@
           Nueva nota
         </button>
       </div>
+      <div class="search-bar" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div>
+            <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:3px">Fecha desde</label>
+            <input type="date" id="notas-filtro-desde" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface)">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:3px">Fecha hasta</label>
+            <input type="date" id="notas-filtro-hasta" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface)">
+          </div>
+          <div style="display:flex;gap:8px;align-self:flex-end">
+            <button class="btn btn-primary" onclick="loadNotas()">Buscar</button>
+            <button class="btn btn-outline" onclick="limpiarFiltroNotas()">Limpiar</button>
+          </div>
+        </div>
+        <div id="notas-filtro-info" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
+      </div>
+
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -906,6 +943,24 @@
           Nueva factura
         </button>
       </div>
+      <div class="search-bar" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div>
+            <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:3px">Fecha desde</label>
+            <input type="date" id="fac-filtro-desde" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface)">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:3px">Fecha hasta</label>
+            <input type="date" id="fac-filtro-hasta" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface)">
+          </div>
+          <div style="display:flex;gap:8px;align-self:flex-end">
+            <button class="btn btn-primary" onclick="loadFacturas()">Buscar</button>
+            <button class="btn btn-outline" onclick="limpiarFiltroFacturas()">Limpiar</button>
+          </div>
+        </div>
+        <div id="fac-filtro-info" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
+      </div>
+
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -1154,15 +1209,15 @@
   <div class="bottom-nav-items">
     <div class="bnav-item active" data-page="dashboard">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span>Resumen</span>
+      <span>Inicio</span>
     </div>
     <div class="bnav-item" data-page="stock">
       <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
       <span>Bodega</span>
     </div>
-    <div class="bnav-item" data-page="transferencias">
-      <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      <span>Transfer.</span>
+    <div class="bnav-item" data-page="entradas">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      <span>Entradas</span>
     </div>
     <div class="bnav-item" data-page="notas">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
@@ -1172,16 +1227,53 @@
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
       <span>Facturas</span>
     </div>
-    <div class="bnav-item" data-page="clientes">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      <span>Clientes</span>
-    </div>
     <div class="bnav-item" data-page="reportes">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
       <span>Reportes</span>
     </div>
+    <div class="bnav-item" id="bnav-mas" onclick="toggleMasMenu()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+      <span>Mas</span>
+    </div>
   </div>
 </nav>
+
+<!-- MENU MAS -->
+<div id="mas-menu" style="
+  display:none;
+  position:fixed;
+  bottom:65px;
+  right:8px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);
+  z-index:300;
+  overflow:hidden;
+  min-width:180px;
+">
+  <div style="padding:8px 12px;font-size:10px;font-weight:600;color:var(--text-3);letter-spacing:.06em;border-bottom:1px solid var(--border)">MAS OPCIONES</div>
+  <div class="mas-item" onclick="navigateFromMas('transferencias')">
+    <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    Transferencias
+  </div>
+  <div class="mas-item" onclick="navigateFromMas('maletas')">
+    <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+    Maletas
+  </div>
+  <div class="mas-item" onclick="navigateFromMas('clientes')">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    Clientes
+  </div>
+  <div class="mas-item" onclick="navigateFromMas('consignaciones')">
+    <svg viewBox="0 0 24 24"><path d="M16 16v2a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg>
+    Consignaciones
+  </div>
+  <div class="mas-item" onclick="navigateFromMas('movimientos')">
+    <svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+    Bitacora
+  </div>
+</div>
 
 <!-- ═══════════ MODALS ═══════════ -->
 
@@ -3821,6 +3913,32 @@ async function guardarItem(itemId) {
     showAlert('Producto actualizado.');
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
+
+
+// ── MENU MAS ──
+function toggleMasMenu() {
+  var menu = document.getElementById('mas-menu');
+  var isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  var btn = document.getElementById('bnav-mas');
+  btn.classList.toggle('active', !isOpen);
+}
+
+function navigateFromMas(page) {
+  document.getElementById('mas-menu').style.display = 'none';
+  document.getElementById('bnav-mas').classList.remove('active');
+  navigate(page);
+}
+
+// Close mas menu when clicking outside
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('mas-menu');
+  var btn = document.getElementById('bnav-mas');
+  if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+    btn.classList.remove('active');
+  }
+});
 
 // ── INIT ──
 initReporteDates();
