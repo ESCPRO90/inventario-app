@@ -819,7 +819,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Referencia</th><th>Descripción</th><th>Lote</th><th>Vence</th><th>Cant.</th></tr>
+              <tr><th>Referencia</th><th>Descripción</th><th>Lote</th><th>Vence</th><th>Cant.</th><th>Devolver</th></tr>
             </thead>
             <tbody id="maleta-tbody">
               <tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>
@@ -1914,8 +1914,6 @@ function renderStock(data) {
 function filterStock() { renderStock(stockData); }
 
 // ── MALETAS ──
-var maletaDataCache = [];
-
 function filtrarMaleta() {
   var q = document.getElementById('maleta-buscar').value.trim().toLowerCase();
   var infoEl = document.getElementById('maleta-buscar-info');
@@ -1946,21 +1944,58 @@ function renderMaletaData(data) {
   }).join('');
 }
 
+function filtrarMaleta() {
+  var q = (document.getElementById('maleta-buscar').value || '').trim().toLowerCase();
+  var infoEl = document.getElementById('maleta-buscar-info');
+  var filtered = q ? maletaDataCache.filter(function(i) {
+    return i.referencia.toLowerCase().includes(q)
+      || i.descripcion.toLowerCase().includes(q)
+      || (i.numero_lote || '').toLowerCase().includes(q);
+  }) : maletaDataCache;
+  if (infoEl) infoEl.textContent = q ? ('Mostrando ' + filtered.length + ' de ' + maletaDataCache.length + ' productos') : '';
+  renderMaletaRows(filtered);
+}
+
+function renderMaletaRows(data) {
+  var tbody = document.getElementById('maleta-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><p>Sin resultados</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(function(i) {
+    var days = Math.floor((new Date(i.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+    var color = days < 0 ? 'color:var(--red-800)' : days <= 60 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : '';
+    var desc = i.descripcion.length > 38 ? i.descripcion.substring(0,38)+'...' : i.descripcion;
+    var lid = i.lote_id || '';
+    var uid = i.ubicacion_id || '';
+    var cant = i.cantidad;
+    return '<tr>'
+      + '<td class="mono">' + i.referencia + '</td>'
+      + '<td>' + desc + '</td>'
+      + '<td class="mono">' + i.numero_lote + '</td>'
+      + '<td style="' + color + '">' + fmt(i.fecha_vencimiento) + '</td>'
+      + '<td><strong>' + cant + '</strong></td>'
+      + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 8px;white-space:nowrap"'
+      + ' data-lid="' + lid + '" data-uid="' + uid + '" data-cant="' + cant + '" data-ref="' + i.referencia + '"'
+      + ' onclick="abrirDevolverMaleta(this)">Devolver</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
 async function loadMaleta(tipo) {
   currentMaleta = tipo;
-  const info = MALETA_INFO[tipo];
-  document.getElementById('maleta-titulo').textContent = `${info.nombre} — ${info.resp}`;
-  document.getElementById('maleta-tbody').innerHTML = `<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>`;
+  var info = MALETA_INFO[tipo];
+  document.getElementById('maleta-titulo').textContent = info.nombre + ' - ' + info.resp;
+  document.getElementById('maleta-tbody').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  var buscarEl = document.getElementById('maleta-buscar');
+  var infoEl = document.getElementById('maleta-buscar-info');
+  if (buscarEl) buscarEl.value = '';
+  if (infoEl) infoEl.textContent = '';
   try {
-    const data = await api(`/stock/maleta/${tipo}`);
-    document.getElementById('maleta-tbody').innerHTML = data.length ? data.map(i => `
-      <tr>
-        <td class="mono">${i.referencia}</td>
-        <td>${i.descripcion.substring(0,40)}${i.descripcion.length>40?'…':''}</td>
-        <td class="mono">${i.numero_lote}</td>
-        <td>${fmt(i.fecha_vencimiento)}</td>
-        <td><strong>${i.cantidad}</strong></td>
-      </tr>`).join('') : `<tr><td colspan="5"><div class="empty"><p>Sin productos en esta maleta</p></div></td></tr>`;
+    var data = await api('/stock/maleta/' + tipo);
+    maletaDataCache = data;
+    renderMaletaRows(data);
+    if (buscarEl) buscarEl.placeholder = 'Buscar entre ' + data.length + ' productos...';
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
@@ -4100,6 +4135,53 @@ async function desactivarUsuario(userId, nombre) {
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
 
+
+// ── DEVOLVER PRODUCTO DE MALETA A BODEGA ──
+var devolverLoteId = null;
+var devolverUbicId = null;
+var devolverCantMax = 0;
+
+async function abrirDevolverMaleta(btn) {
+  devolverLoteId = btn.getAttribute('data-lid');
+  devolverUbicId = btn.getAttribute('data-uid');
+  devolverCantMax = parseInt(btn.getAttribute('data-cant')) || 1;
+  var ref = btn.getAttribute('data-ref');
+  if (!devolverLoteId || !devolverUbicId) {
+    showAlert('No se pudo obtener el ID del lote. Recarga la pagina.', 'error');
+    return;
+  }
+  document.getElementById('dev-ref').textContent = ref;
+  document.getElementById('dev-max-label').textContent = '(maximo: ' + devolverCantMax + ')';
+  var cantEl = document.getElementById('dev-cantidad');
+  cantEl.value = devolverCantMax;
+  cantEl.max = devolverCantMax;
+  openModal('modal-devolver-maleta');
+}
+
+async function confirmarDevolverMaleta() {
+  var cantidad = parseInt(document.getElementById('dev-cantidad').value) || 0;
+  if (cantidad < 1) { showAlert('La cantidad debe ser al menos 1.', 'error'); return; }
+  if (cantidad > devolverCantMax) { showAlert('No hay suficiente stock. Maximo: ' + devolverCantMax, 'error'); return; }
+  try {
+    // Get bodega ID
+    var ubicaciones = await api('/stock/ubicaciones/todas');
+    var bodega = ubicaciones.find(function(u) { return u.tipo === 'BODEGA'; });
+    if (!bodega) { showAlert('No se encontro la bodega.', 'error'); return; }
+    await api('/stock/transferencia', {
+      method: 'POST',
+      body: JSON.stringify({
+        lote_id: devolverLoteId,
+        ubicacion_desde_id: devolverUbicId,
+        ubicacion_hasta_id: bodega.id,
+        cantidad: cantidad,
+      }),
+    });
+    closeModal('modal-devolver-maleta');
+    showAlert(cantidad + ' unidad(es) devuelta(s) a Bodega Central correctamente.');
+    loadMaleta(currentMaleta);
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -4287,6 +4369,30 @@ checkSession();
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('modal-reset-password')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarResetPassword()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEVOLVER A BODEGA -->
+<div class="modal-overlay" id="modal-devolver-maleta">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head">
+      <div class="modal-title">Devolver a Bodega Central</div>
+      <button class="modal-close" onclick="closeModal('modal-devolver-maleta')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--teal-50);border:1px solid var(--teal-100);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px">Producto</div>
+        <div style="font-size:14px;font-weight:500" id="dev-ref"></div>
+      </div>
+      <div class="form-group">
+        <label>Cantidad a devolver <span id="dev-max-label" style="color:var(--text-3);font-weight:400"></span></label>
+        <input type="number" id="dev-cantidad" min="1" value="1">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-devolver-maleta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDevolverMaleta()">Devolver a bodega</button>
     </div>
   </div>
 </div>
