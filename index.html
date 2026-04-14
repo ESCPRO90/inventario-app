@@ -804,6 +804,14 @@
         <button class="btn btn-outline" onclick="setMaletaFiltro('VP1')">VP1</button>
         <button class="btn btn-outline" onclick="setMaletaFiltro('VP2')">VP2</button>
       </div>
+      <div class="search-bar" style="margin-bottom:12px">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="maleta-buscar" placeholder="Buscar por referencia o descripcion..." oninput="filtrarMaleta()" style="width:100%">
+        </div>
+        <div id="maleta-buscar-info" style="font-size:12px;color:var(--text-3);margin-top:6px"></div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <div class="card-title" id="maleta-titulo">Maleta URO — Lic. Hasbun / Ricardo</div>
@@ -1906,6 +1914,38 @@ function renderStock(data) {
 function filterStock() { renderStock(stockData); }
 
 // ── MALETAS ──
+var maletaDataCache = [];
+
+function filtrarMaleta() {
+  var q = document.getElementById('maleta-buscar').value.trim().toLowerCase();
+  var infoEl = document.getElementById('maleta-buscar-info');
+  if (!maletaDataCache.length) return;
+  var filtered = q ? maletaDataCache.filter(function(i) {
+    return i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q) || (i.numero_lote||'').toLowerCase().includes(q);
+  }) : maletaDataCache;
+  if (infoEl) infoEl.textContent = q ? 'Mostrando ' + filtered.length + ' de ' + maletaDataCache.length + ' productos' : '';
+  renderMaletaData(filtered);
+}
+
+function renderMaletaData(data) {
+  var tbody = document.getElementById('maleta-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><p>Sin resultados</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(function(item) {
+    var days = Math.floor((new Date(item.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+    var color = days < 0 ? 'color:var(--red-800)' : days <= 60 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : '';
+    return '<tr>'
+      + '<td class="mono" style="font-size:12px">' + item.referencia + '</td>'
+      + '<td style="font-size:12px">' + item.descripcion + '</td>'
+      + '<td class="mono" style="font-size:12px">' + item.numero_lote + '</td>'
+      + '<td style="font-size:12px;' + color + '">' + fmt(item.fecha_vencimiento) + '</td>'
+      + '<td><strong>' + item.cantidad + '</strong></td>'
+      + '</tr>';
+  }).join('');
+}
+
 async function loadMaleta(tipo) {
   currentMaleta = tipo;
   const info = MALETA_INFO[tipo];
