@@ -1201,6 +1201,32 @@
         </div>
       </div>
     </div>
+
+    <!-- USUARIOS -->
+    <div class="page" id="page-usuarios">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Usuarios del sistema</div>
+          <div class="page-subtitle">Gestion de accesos — solo administradores</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-nuevo-usuario')">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo usuario
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody id="usuarios-tbody">
+              <tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -1740,6 +1766,7 @@ function loadPage(page) {
   else if (page === 'clientes')  loadClientes();
   else if (page === 'movimientos') loadMovimientos();
   else if (page === 'transferencias') { loadTransferUbicaciones(); }
+  else if (page === 'usuarios') loadUsuarios();
 }
 
 document.querySelectorAll('[data-page]').forEach(el => {
@@ -3940,6 +3967,95 @@ document.addEventListener('click', function(e) {
   }
 });
 
+
+// ── USUARIOS ──
+var currentResetUserId = null;
+
+async function loadUsuarios() {
+  document.getElementById('usuarios-tbody').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  try {
+    var data = await api('/auth/usuarios');
+    if (!data.length) {
+      document.getElementById('usuarios-tbody').innerHTML = '<tr><td colspan="5"><div class="empty"><p>Sin usuarios registrados</p></div></td></tr>';
+      return;
+    }
+    document.getElementById('usuarios-tbody').innerHTML = data.map(function(u) {
+      var uid = u.id;
+      var isSelf = currentUser && currentUser.id === uid;
+      var isAdmin = u.rol === 'ADMIN';
+      return '<tr>'
+        + '<td><strong>' + u.nombre + '</strong>' + (isSelf ? ' <span class="badge badge-teal" style="font-size:10px">Yo</span>' : '') + '</td>'
+        + '<td style="font-size:13px;color:var(--text-2)">' + u.email + '</td>'
+        + '<td><span class="badge ' + (isAdmin ? 'badge-blue' : 'badge-gray') + '">' + u.rol + '</span></td>'
+        + '<td><span class="badge ' + (u.activo ? 'badge-teal' : 'badge-red') + '">' + (u.activo ? 'Activo' : 'Inactivo') + '</span></td>'
+        + '<td style="display:flex;gap:6px">'
+        + '<button class="btn btn-outline" style="font-size:11px;padding:3px 8px" onclick="abrirResetPassword(\'' + uid + '\',\'' + u.nombre.replace(/'/g,' ') + '\')">Reset pwd</button>'
+        + (!isSelf && !isAdmin ? '<button class="btn btn-outline" style="font-size:11px;padding:3px 8px;color:var(--red-800)" onclick="desactivarUsuario(\'' + uid + '\',\'' + u.nombre.replace(/'/g,' ') + '\')">Desactivar</button>' : '')
+        + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch(e) {
+    if (e.message.includes('403') || e.message.includes('401')) {
+      document.getElementById('usuarios-tbody').innerHTML = '<tr><td colspan="5"><div class="empty"><p>Solo administradores pueden ver los usuarios.</p></div></td></tr>';
+    } else {
+      showAlert('Error: ' + e.message, 'error');
+    }
+  }
+}
+
+async function crearUsuario() {
+  var nombre   = document.getElementById('nu-nombre').value.trim();
+  var email    = document.getElementById('nu-email').value.trim();
+  var password = document.getElementById('nu-password').value;
+  var password2= document.getElementById('nu-password2').value;
+  var rol      = document.getElementById('nu-rol').value;
+  if (!nombre || !email || !password) { showAlert('Completa todos los campos.', 'error'); return; }
+  if (password !== password2) { showAlert('Las contrasenas no coinciden.', 'error'); return; }
+  if (password.length < 6) { showAlert('La contrasena debe tener al menos 6 caracteres.', 'error'); return; }
+  try {
+    await api('/auth/usuarios', { method: 'POST', body: JSON.stringify({ nombre, email, password, rol }) });
+    closeModal('modal-nuevo-usuario');
+    document.getElementById('nu-nombre').value = '';
+    document.getElementById('nu-email').value = '';
+    document.getElementById('nu-password').value = '';
+    document.getElementById('nu-password2').value = '';
+    showAlert('Usuario creado correctamente. Ya puede iniciar sesion.');
+    loadUsuarios();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+function abrirResetPassword(userId, nombre) {
+  currentResetUserId = userId;
+  document.getElementById('reset-pwd-titulo').textContent = 'Restablecer contrasena — ' + nombre;
+  document.getElementById('reset-pwd-nueva').value = '';
+  document.getElementById('reset-pwd-confirmar').value = '';
+  openModal('modal-reset-password');
+}
+
+async function guardarResetPassword() {
+  var nueva     = document.getElementById('reset-pwd-nueva').value;
+  var confirmar = document.getElementById('reset-pwd-confirmar').value;
+  if (!nueva || nueva.length < 6) { showAlert('La contrasena debe tener al menos 6 caracteres.', 'error'); return; }
+  if (nueva !== confirmar) { showAlert('Las contrasenas no coinciden.', 'error'); return; }
+  try {
+    await api('/auth/usuarios/' + currentResetUserId + '/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ password_nuevo: nueva }),
+    });
+    closeModal('modal-reset-password');
+    showAlert('Contrasena restablecida correctamente.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function desactivarUsuario(userId, nombre) {
+  if (!confirm('Seguro que queres desactivar a ' + nombre + '? No podra iniciar sesion.')) return;
+  try {
+    await api('/auth/usuarios/' + userId + '/desactivar', { method: 'PATCH' });
+    showAlert(nombre + ' desactivado correctamente.');
+    loadUsuarios();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -4060,6 +4176,73 @@ checkSession();
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('modal-editar-entrada')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO USUARIO -->
+<div class="modal-overlay" id="modal-nuevo-usuario">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title">Nuevo usuario</div>
+      <button class="modal-close" onclick="closeModal('modal-nuevo-usuario')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label>Nombre completo</label>
+          <input type="text" id="nu-nombre" placeholder="Ej: Maria Lopez">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="nu-email" placeholder="usuario@ejemplo.com">
+        </div>
+        <div class="form-group">
+          <label>Contrasena</label>
+          <input type="password" id="nu-password" placeholder="Minimo 6 caracteres">
+        </div>
+        <div class="form-group">
+          <label>Confirmar contrasena</label>
+          <input type="password" id="nu-password2" placeholder="Repetir contrasena">
+        </div>
+        <div class="form-group">
+          <label>Rol</label>
+          <select id="nu-rol">
+            <option value="OPERADOR">Operador — acceso a todas las funciones</option>
+            <option value="ADMIN">Administrador — acceso completo + usuarios</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-nuevo-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR PASSWORD USUARIO -->
+<div class="modal-overlay" id="modal-reset-password">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head">
+      <div class="modal-title" id="reset-pwd-titulo">Restablecer contrasena</div>
+      <button class="modal-close" onclick="closeModal('modal-reset-password')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label>Nueva contrasena</label>
+          <input type="password" id="reset-pwd-nueva" placeholder="Minimo 6 caracteres">
+        </div>
+        <div class="form-group">
+          <label>Confirmar contrasena</label>
+          <input type="password" id="reset-pwd-confirmar" placeholder="Repetir contrasena">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-reset-password')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarResetPassword()">Guardar</button>
     </div>
   </div>
 </div>
