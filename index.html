@@ -2101,7 +2101,7 @@ function seleccionarProducto(el) {
   var codInput = sug._codInput;
   if (refInput) refInput.value = el.getAttribute('data-ref');
   if (descInput) { descInput.value = el.getAttribute('data-desc'); descInput.style.background = 'var(--teal-50)'; setTimeout(function(){ descInput.style.background = ''; }, 1000); }
-  if (codInput && el.getAttribute('data-cod')) codInput.value = el.getAttribute('data-cod');
+  // codigo de barras no se autocompleta
   sug.style.display = 'none';
 }
 
@@ -2117,7 +2117,7 @@ async function autocompletarDescripcion(refInput, rowIdx) {
       descInput.value = data[0].descripcion;
       descInput.style.background = 'var(--teal-50)';
       setTimeout(function(){ descInput.style.background = ''; }, 1000);
-      if (codInput && !codInput.value && data[0].codigo_barra) codInput.value = data[0].codigo_barra;
+      // codigo de barras no se autocompleta
     }
   } catch(e) {}
 }
