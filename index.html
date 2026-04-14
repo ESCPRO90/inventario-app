@@ -2044,17 +2044,82 @@ async function loadEntradas() {
 }
 
 function addEntradaItem() {
-  const tbody = document.getElementById('ent-items-body');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" placeholder="XTP116IJS="></td>
-    <td><input type="text" placeholder="Descripción del producto"></td>
-    <td><input type="text" placeholder="Código de barras"></td>
-    <td><input type="text" placeholder="N° de lote"></td>
-    <td><input type="date"></td>
-    <td><input type="number" min="1" value="1" style="width:70px"></td>
-    <td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">✕</button></td>`;
+  var tbody = document.getElementById('ent-items-body');
+  var rowIdx = tbody.children.length;
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td><input type="text" placeholder="XTP116IJS=" id="ent-ref-' + rowIdx + '" onblur="autocompletarDescripcion(this,' + rowIdx + ')" style="width:100%"></td>'
+    + '<td style="position:relative"><input type="text" placeholder="Descripcion del producto" id="ent-desc-' + rowIdx + '" style="width:100%">'
+    + '<div id="ent-sug-' + rowIdx + '" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--teal-400);border-radius:6px;z-index:50;max-height:150px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div></td>'
+    + '<td><input type="text" placeholder="Cod. barras" id="ent-cod-' + rowIdx + '" style="width:90px"></td>'
+    + '<td><input type="text" placeholder="N° lote" style="width:100px"></td>'
+    + '<td><input type="date"></td>'
+    + '<td><input type="number" min="1" value="1" style="width:70px"></td>'
+    + '<td><button onclick="this.closest(\'tr\').remove()" style="background:none;border:none;color:var(--red-400);cursor:pointer;font-size:16px">X</button></td>';
   tbody.appendChild(tr);
+
+  // Add live search on referencia field
+  var refInput = document.getElementById('ent-ref-' + rowIdx);
+  var descInput = document.getElementById('ent-desc-' + rowIdx);
+  var sugDiv = document.getElementById('ent-sug-' + rowIdx);
+  var codInput = document.getElementById('ent-cod-' + rowIdx);
+
+  refInput.addEventListener('input', function() {
+    var q = this.value.trim();
+    if (q.length < 2) { sugDiv.style.display = 'none'; return; }
+    api('/productos/?buscar=' + encodeURIComponent(q) + '&limit=5').then(function(data) {
+      if (!data.length) { sugDiv.style.display = 'none'; return; }
+      sugDiv.innerHTML = data.map(function(p) {
+        var safeRef = p.referencia.replace(/"/g, '');
+        var safeDesc = p.descripcion.replace(/"/g, '');
+        var safeCod = (p.codigo_barra || '').replace(/"/g, '');
+        return '<div style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--gray-100)"'
+          + ' onmousedown="event.preventDefault()"'
+          + ' onclick="seleccionarProducto(this)"'
+          + ' data-ref="' + safeRef + '" data-desc="' + safeDesc + '" data-cod="' + safeCod + '">'
+          + '<strong>' + p.referencia + '</strong><br>'
+          + '<span style="color:var(--text-3)">' + p.descripcion.substring(0,50) + '</span>'
+          + '</div>';
+      }).join('');
+      sugDiv.style.display = 'block';
+
+      // Store references to inputs in sugDiv
+      sugDiv._refInput = refInput;
+      sugDiv._descInput = descInput;
+      sugDiv._codInput = codInput;
+    }).catch(function() { sugDiv.style.display = 'none'; });
+  });
+
+  refInput.addEventListener('blur', function() {
+    setTimeout(function() { sugDiv.style.display = 'none'; }, 200);
+  });
+}
+
+function seleccionarProducto(el) {
+  var sug = el.closest('div[id^="ent-sug"]') || el.parentElement;
+  var refInput = sug._refInput;
+  var descInput = sug._descInput;
+  var codInput = sug._codInput;
+  if (refInput) refInput.value = el.getAttribute('data-ref');
+  if (descInput) { descInput.value = el.getAttribute('data-desc'); descInput.style.background = 'var(--teal-50)'; setTimeout(function(){ descInput.style.background = ''; }, 1000); }
+  if (codInput && el.getAttribute('data-cod')) codInput.value = el.getAttribute('data-cod');
+  sug.style.display = 'none';
+}
+
+async function autocompletarDescripcion(refInput, rowIdx) {
+  var ref = refInput.value.trim();
+  if (!ref) return;
+  var descInput = document.getElementById('ent-desc-' + rowIdx);
+  var codInput = document.getElementById('ent-cod-' + rowIdx);
+  if (descInput && descInput.value) return; // ya tiene descripcion
+  try {
+    var data = await api('/productos/?buscar=' + encodeURIComponent(ref) + '&limit=1');
+    if (data.length && data[0].referencia.toLowerCase() === ref.toLowerCase()) {
+      descInput.value = data[0].descripcion;
+      descInput.style.background = 'var(--teal-50)';
+      setTimeout(function(){ descInput.style.background = ''; }, 1000);
+      if (codInput && !codInput.value && data[0].codigo_barra) codInput.value = data[0].codigo_barra;
+    }
+  } catch(e) {}
 }
 
 async function saveEntrada() {
