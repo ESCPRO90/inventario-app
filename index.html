@@ -1009,7 +1009,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nombre</th><th>Tipo</th><th>NIT/Registro</th><th>Giro</th><th>Teléfono</th></tr>
+              <tr><th>Nombre</th><th>Tipo</th><th>NIT/Registro</th><th>Giro</th><th>Teléfono</th><th>Acciones</th></tr>
             </thead>
             <tbody id="clientes-tbody">
               <tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>
@@ -2320,14 +2320,17 @@ async function loadClientes() {
   const q = document.getElementById('cliente-search')?.value || '';
   try {
     const data = await api(`/clientes/?${q ? 'buscar='+encodeURIComponent(q) : ''}&limit=100`);
-    document.getElementById('clientes-tbody').innerHTML = data.length ? data.map(c => `
-      <tr>
-        <td><strong>${c.nombre}</strong></td>
-        <td><span class="badge ${c.tipo==='HOSPITAL'?'badge-blue':'badge-gray'}">${c.tipo}</span></td>
-        <td class="mono">${c.registro_nit || '—'}</td>
-        <td>${c.giro || '—'}</td>
-        <td>${c.telefono || '—'}</td>
-      </tr>`).join('') : `<tr><td colspan="5"><div class="empty"><p>Sin clientes registrados</p></div></td></tr>`;
+    document.getElementById('clientes-tbody').innerHTML = data.length ? data.map(function(c) {
+      var cid = c.id;
+      return '<tr>'
+        + '<td><strong>' + c.nombre + '</strong></td>'
+        + '<td><span class="badge ' + (c.tipo==='HOSPITAL'?'badge-blue':'badge-gray') + '">' + c.tipo + '</span></td>'
+        + '<td class="mono">' + (c.registro_nit || '-') + '</td>'
+        + '<td>' + (c.giro || '-') + '</td>'
+        + '<td>' + (c.telefono || '-') + '</td>'
+        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="editarCliente('' + cid + '')">Editar</button></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="6"><div class="empty"><p>Sin clientes registrados</p></div></td></tr>';
   } catch(e) { showAlert(e.message, 'error'); }
 }
 
@@ -4247,6 +4250,47 @@ async function confirmarDevolverMaleta() {
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
 
+
+// ── EDITAR CLIENTE ──
+async function editarCliente(clienteId) {
+  try {
+    var data = await api('/clientes/' + clienteId);
+    document.getElementById('edit-cli-id').value = data.id;
+    document.getElementById('edit-cli-nombre').value = data.nombre || '';
+    document.getElementById('edit-cli-tipo').value = data.tipo || 'PARTICULAR';
+    document.getElementById('edit-cli-nit').value = data.registro_nit || '';
+    document.getElementById('edit-cli-giro').value = data.giro || '';
+    document.getElementById('edit-cli-tel').value = data.telefono || '';
+    document.getElementById('edit-cli-dir').value = data.direccion || '';
+    document.getElementById('edit-cli-municipio').value = data.municipio || '';
+    document.getElementById('edit-cli-depto').value = data.departamento || '';
+    document.getElementById('edit-cli-email').value = data.email || '';
+    openModal('modal-editar-cliente');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function guardarCliente() {
+  var id = document.getElementById('edit-cli-id').value;
+  var nombre = document.getElementById('edit-cli-nombre').value.trim();
+  if (!nombre) { showAlert('El nombre es requerido.', 'error'); return; }
+  try {
+    await api('/clientes/' + id, { method: 'PUT', body: JSON.stringify({
+      nombre: nombre,
+      tipo: document.getElementById('edit-cli-tipo').value,
+      registro_nit: document.getElementById('edit-cli-nit').value || null,
+      giro: document.getElementById('edit-cli-giro').value || null,
+      telefono: document.getElementById('edit-cli-tel').value || null,
+      direccion: document.getElementById('edit-cli-dir').value || null,
+      municipio: document.getElementById('edit-cli-municipio').value || null,
+      departamento: document.getElementById('edit-cli-depto').value || null,
+      email: document.getElementById('edit-cli-email').value || null,
+    })});
+    closeModal('modal-editar-cliente');
+    showAlert('Cliente actualizado correctamente.');
+    loadClientes();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -4458,6 +4502,64 @@ checkSession();
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('modal-devolver-maleta')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarDevolverMaleta()">Devolver a bodega</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR CLIENTE -->
+<div class="modal-overlay" id="modal-editar-cliente">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Editar cliente</div>
+      <button class="modal-close" onclick="closeModal('modal-editar-cliente')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-cli-id">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Nombre *</label>
+          <input type="text" id="edit-cli-nombre" placeholder="Nombre completo o razon social">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="edit-cli-tipo">
+            <option value="PARTICULAR">Particular</option>
+            <option value="HOSPITAL">Hospital</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>NIT / Registro</label>
+          <input type="text" id="edit-cli-nit" placeholder="NIT o registro fiscal">
+        </div>
+        <div class="form-group">
+          <label>Giro</label>
+          <input type="text" id="edit-cli-giro" placeholder="Actividad economica">
+        </div>
+        <div class="form-group">
+          <label>Telefono</label>
+          <input type="text" id="edit-cli-tel" placeholder="Numero de contacto">
+        </div>
+        <div class="form-group full">
+          <label>Direccion</label>
+          <input type="text" id="edit-cli-dir" placeholder="Direccion completa">
+        </div>
+        <div class="form-group">
+          <label>Municipio</label>
+          <input type="text" id="edit-cli-municipio">
+        </div>
+        <div class="form-group">
+          <label>Departamento</label>
+          <input type="text" id="edit-cli-depto">
+        </div>
+        <div class="form-group full">
+          <label>Email</label>
+          <input type="email" id="edit-cli-email" placeholder="correo@ejemplo.com">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-editar-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">Guardar cambios</button>
     </div>
   </div>
 </div>
