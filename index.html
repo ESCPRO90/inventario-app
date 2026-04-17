@@ -2328,7 +2328,7 @@ async function loadClientes() {
         + '<td class="mono">' + (c.registro_nit || '-') + '</td>'
         + '<td>' + (c.giro || '-') + '</td>'
         + '<td>' + (c.telefono || '-') + '</td>'
-        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="editarCliente('' + cid + '')">Editar</button></td>'
+        + '<td><button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="editarCliente(\'' + cid + '\')">Editar</button></td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="6"><div class="empty"><p>Sin clientes registrados</p></div></td></tr>';
   } catch(e) { showAlert(e.message, 'error'); }
