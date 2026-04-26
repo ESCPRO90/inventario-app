@@ -677,13 +677,13 @@
       <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       Transferencias
     </div>
-    <div class="sidebar-item" data-page="carga-masiva">
-      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Carga masiva
-    </div>
     <div class="sidebar-item" data-page="notas">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Notas de envío
+    </div>
+    <div class="sidebar-item" data-page="notas-masivas">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Notas masivas
     </div>
     <div class="sidebar-item" data-page="consignaciones">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
@@ -1244,14 +1244,14 @@
       </div>
     </div>
 
-    <!-- CARGA MASIVA -->
-    <div class="page" id="page-carga-masiva">
+    <!-- NOTAS MASIVAS -->
+    <div class="page" id="page-notas-masivas">
       <div class="page-header">
         <div>
-          <div class="page-title">Carga masiva a maletas</div>
-          <div class="page-subtitle">Transferi productos de Bodega a maletas usando un archivo Excel</div>
+          <div class="page-title">Carga masiva de notas de envío</div>
+          <div class="page-subtitle">Crea multiples notas desde un archivo Excel — a clientes, maletas o consignacion</div>
         </div>
-        <button class="btn btn-outline" onclick="descargarPlantilla()">
+        <button class="btn btn-outline" onclick="descargarPlantillaNotas()">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar plantilla
         </button>
@@ -1259,67 +1259,88 @@
 
       <!-- Instrucciones -->
       <div class="card" style="margin-bottom:16px">
-        <div class="card-head"><div class="card-title">Como usar</div></div>
-        <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+        <div class="card-head"><div class="card-title">Como funciona</div></div>
+        <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
           <div style="display:flex;gap:10px;align-items:flex-start">
             <div style="width:28px;height:28px;border-radius:50%;background:var(--teal-800);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">1</div>
-            <div><div style="font-size:13px;font-weight:500">Descargar plantilla</div><div style="font-size:12px;color:var(--text-3)">Toca el boton arriba para obtener el Excel con el formato correcto</div></div>
+            <div><div style="font-size:13px;font-weight:500">Descargar plantilla</div><div style="font-size:12px;color:var(--text-3)">Tiene 13 columnas con ejemplos incluidos y hoja de instrucciones</div></div>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <div style="width:28px;height:28px;border-radius:50%;background:var(--teal-800);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">2</div>
-            <div><div style="font-size:13px;font-weight:500">Completar el Excel</div><div style="font-size:12px;color:var(--text-3)">Llenar: Referencia, N° Lote, Cantidad y Maleta (URO / NEURO / VP1 / VP2)</div></div>
+            <div><div style="font-size:13px;font-weight:500">Agrupar por N° Nota</div><div style="font-size:12px;color:var(--text-3)">Mismo numero de nota en varias filas = multiples productos en una nota</div></div>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <div style="width:28px;height:28px;border-radius:50%;background:var(--teal-800);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">3</div>
-            <div><div style="font-size:13px;font-weight:500">Subir el archivo</div><div style="font-size:12px;color:var(--text-3)">Selecciona el archivo y toca Procesar — el sistema transfiere todo automaticamente</div></div>
+            <div><div style="font-size:13px;font-weight:500">Destino flexible</div><div style="font-size:12px;color:var(--text-3)">Cada nota puede ir a un CLIENTE (nombre) o a una MALETA (URO/NEURO/VP1/VP2)</div></div>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <div style="width:28px;height:28px;border-radius:50%;background:var(--teal-800);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">4</div>
-            <div><div style="font-size:13px;font-weight:500">Revisar resultados</div><div style="font-size:12px;color:var(--text-3)">Ver que se transfiro correctamente y que filas tuvieron error y por que</div></div>
+            <div><div style="font-size:13px;font-weight:500">Stock automatico</div><div style="font-size:12px;color:var(--text-3)">Las salidas descuentan de Bodega Central. Ver reporte de errores al finalizar</div></div>
           </div>
+        </div>
+
+        <!-- Columnas reference -->
+        <div style="padding:0 16px 16px">
+          <div style="font-size:11px;font-weight:600;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Columnas del Excel</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="badge badge-teal">N° Nota</span>
+            <span class="badge badge-gray">Tipo</span>
+            <span class="badge badge-gray">Fecha</span>
+            <span class="badge badge-gray">Dirección</span>
+            <span class="badge badge-blue">Destino Tipo</span>
+            <span class="badge badge-blue">Destino</span>
+            <span class="badge badge-gray">Bienes a título de</span>
+            <span class="badge badge-gray">Autoriza</span>
+            <span class="badge badge-gray">Entrega</span>
+            <span class="badge badge-gray">Recibe</span>
+            <span class="badge badge-teal">Referencia</span>
+            <span class="badge badge-teal">N° Lote</span>
+            <span class="badge badge-teal">Cantidad</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:8px">Los campos en verde son obligatorios en cada fila. Los demas solo en la primera fila de cada nota.</div>
         </div>
       </div>
 
-      <!-- Upload area -->
+      <!-- Upload -->
       <div class="card" style="margin-bottom:16px">
         <div class="card-head"><div class="card-title">Subir archivo Excel</div></div>
         <div style="padding:20px">
-          <div id="drop-zone" style="border:2px dashed var(--teal-400);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:background .15s" onclick="document.getElementById('excel-input').click()" ondragover="event.preventDefault();this.style.background='var(--teal-50)'" ondragleave="this.style.background=''" ondrop="handleDrop(event)">
+          <div id="drop-zone-notas" style="border:2px dashed var(--teal-400);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:background .15s" onclick="document.getElementById('excel-input-notas').click()" ondragover="event.preventDefault();this.style.background='var(--teal-50)'" ondragleave="this.style.background=''" ondrop="handleDropNotas(event)">
             <svg viewBox="0 0 24 24" style="width:48px;height:48px;stroke:var(--teal-400);fill:none;stroke-width:1.5;margin:0 auto 12px;display:block"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <div style="font-size:15px;font-weight:500;color:var(--teal-800);margin-bottom:6px">Arrastra el archivo aqui o toca para seleccionar</div>
-            <div id="drop-filename" style="font-size:13px;color:var(--text-3)">Formatos aceptados: .xlsx, .xls</div>
+            <div id="drop-filename-notas" style="font-size:13px;color:var(--text-3)">Formatos aceptados: .xlsx, .xls</div>
           </div>
-          <input type="file" id="excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)">
+          <input type="file" id="excel-input-notas" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelectNotas(this)">
           <div style="display:flex;justify-content:center;margin-top:16px">
-            <button class="btn btn-primary" id="btn-procesar" onclick="procesarCargaMasiva()" disabled style="opacity:.5;min-width:180px">
+            <button class="btn btn-primary" id="btn-procesar-notas" onclick="procesarCargaMasivaNotas()" disabled style="opacity:.5;min-width:200px">
               <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>
-              Procesar carga
+              Crear notas de envio
             </button>
           </div>
         </div>
       </div>
 
       <!-- Resultados -->
-      <div id="carga-resultados" style="display:none">
+      <div id="notas-masivas-resultados" style="display:none">
         <div class="card" style="margin-bottom:12px">
           <div class="card-head"><div class="card-title">Resumen de la carga</div></div>
-          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px" id="carga-resumen"></div>
+          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px" id="notas-masivas-resumen"></div>
         </div>
-        <div class="card" id="carga-ok-card" style="margin-bottom:12px;display:none">
-          <div class="card-head" style="background:var(--teal-50)"><div class="card-title" style="color:var(--teal-800)">Transferencias realizadas</div></div>
+        <div class="card" id="notas-ok-card" style="margin-bottom:12px;display:none">
+          <div class="card-head" style="background:var(--teal-50)"><div class="card-title" style="color:var(--teal-800)">Notas creadas correctamente</div></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Fila</th><th>Referencia</th><th>N° Lote</th><th>Cantidad</th><th>Maleta</th></tr></thead>
-              <tbody id="carga-ok-tbody"></tbody>
+              <thead><tr><th>N° Nota</th><th>Tipo</th><th>Fecha</th><th>Destino</th><th>Productos</th></tr></thead>
+              <tbody id="notas-ok-tbody"></tbody>
             </table>
           </div>
         </div>
-        <div class="card" id="carga-err-card" style="display:none">
-          <div class="card-head" style="background:var(--red-50)"><div class="card-title" style="color:var(--red-800)">Filas con error — no procesadas</div></div>
+        <div class="card" id="notas-err-card" style="display:none">
+          <div class="card-head" style="background:var(--red-50)"><div class="card-title" style="color:var(--red-800)">Errores — filas o notas no procesadas</div></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Fila</th><th>Motivo del error</th></tr></thead>
-              <tbody id="carga-err-tbody"></tbody>
+              <thead><tr><th>Referencia</th><th>Motivo del error</th></tr></thead>
+              <tbody id="notas-err-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -1865,7 +1886,6 @@ function loadPage(page) {
   else if (page === 'movimientos') loadMovimientos();
   else if (page === 'transferencias') { loadTransferUbicaciones(); }
   else if (page === 'usuarios') loadUsuarios();
-  else if (page === 'carga-masiva') { cargaFile = null; document.getElementById('carga-resultados').style.display='none'; }
 }
 
 document.querySelectorAll('[data-page]').forEach(el => {
@@ -4379,61 +4399,60 @@ async function guardarCliente() {
 }
 
 
-// ── CARGA MASIVA ──
-var cargaFile = null;
+// ── CARGA MASIVA NOTAS ──
+var cargaNotasFile = null;
 
-function handleDrop(e) {
+function handleDropNotas(e) {
   e.preventDefault();
-  document.getElementById('drop-zone').style.background = '';
+  document.getElementById('drop-zone-notas').style.background = '';
   var files = e.dataTransfer.files;
-  if (files.length) setFile(files[0]);
+  if (files.length) setFileNotas(files[0]);
 }
 
-function handleFileSelect(input) {
-  if (input.files.length) setFile(input.files[0]);
+function handleFileSelectNotas(input) {
+  if (input.files.length) setFileNotas(input.files[0]);
 }
 
-function setFile(file) {
+function setFileNotas(file) {
   if (!file.name.match(/\.xlsx?$/i)) {
     showAlert('Solo se aceptan archivos .xlsx o .xls', 'error');
     return;
   }
-  cargaFile = file;
-  document.getElementById('drop-filename').textContent = file.name + ' — ' + (file.size/1024).toFixed(1) + ' KB';
-  document.getElementById('drop-filename').style.color = 'var(--teal-800)';
-  document.getElementById('drop-filename').style.fontWeight = '500';
-  var btn = document.getElementById('btn-procesar');
+  cargaNotasFile = file;
+  document.getElementById('drop-filename-notas').textContent = file.name + ' — ' + (file.size/1024).toFixed(1) + ' KB';
+  document.getElementById('drop-filename-notas').style.color = 'var(--teal-800)';
+  document.getElementById('drop-filename-notas').style.fontWeight = '500';
+  var btn = document.getElementById('btn-procesar-notas');
   btn.disabled = false;
   btn.style.opacity = '1';
-  document.getElementById('carga-resultados').style.display = 'none';
+  document.getElementById('notas-masivas-resultados').style.display = 'none';
 }
 
-function descargarPlantilla() {
+function descargarPlantillaNotas() {
   var token = getToken();
-  var url = API + '/transferencias/plantilla-excel';
-  fetch(url, { headers: { Authorization: 'Bearer ' + token } })
+  fetch(API + '/notas-masivas/plantilla-excel', { headers: { Authorization: 'Bearer ' + token } })
     .then(function(r) { return r.blob(); })
     .then(function(blob) {
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'plantilla_carga_maletas.xlsx';
+      a.download = 'plantilla_carga_notas.xlsx';
       a.click();
     })
-    .catch(function(e) { showAlert('Error al descargar plantilla: ' + e.message, 'error'); });
+    .catch(function(e) { showAlert('Error al descargar: ' + e.message, 'error'); });
 }
 
-async function procesarCargaMasiva() {
-  if (!cargaFile) { showAlert('Selecciona un archivo primero.', 'error'); return; }
-  var btn = document.getElementById('btn-procesar');
+async function procesarCargaMasivaNotas() {
+  if (!cargaNotasFile) { showAlert('Selecciona un archivo primero.', 'error'); return; }
+  var btn = document.getElementById('btn-procesar-notas');
   btn.disabled = true;
   btn.style.opacity = '.6';
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0"></div> Procesando...';
-  document.getElementById('carga-resultados').style.display = 'none';
+  document.getElementById('notas-masivas-resultados').style.display = 'none';
   try {
     var formData = new FormData();
-    formData.append('file', cargaFile);
+    formData.append('file', cargaNotasFile);
     var token = getToken();
-    var r = await fetch(API + '/transferencias/carga-masiva', {
+    var r = await fetch(API + '/notas-masivas/carga-masiva', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token },
       body: formData,
@@ -4443,74 +4462,67 @@ async function procesarCargaMasiva() {
       throw new Error(e.detail || r.statusText);
     }
     var data = await r.json();
-    mostrarResultados(data);
+    mostrarResultadosNotas(data);
   } catch(e) {
     showAlert('Error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
     btn.style.opacity = '1';
-    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg> Procesar carga';
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg> Crear notas de envio';
   }
 }
 
-function mostrarResultados(data) {
-  document.getElementById('carga-resultados').style.display = 'block';
+function mostrarResultadosNotas(data) {
+  document.getElementById('notas-masivas-resultados').style.display = 'block';
 
-  // Resumen
-  var okColor = data.transferencias > 0 ? 'var(--teal-800)' : 'var(--text-3)';
+  var okColor = data.notas_creadas > 0 ? 'var(--teal-800)' : 'var(--text-3)';
   var errColor = data.errores > 0 ? 'var(--red-800)' : 'var(--text-3)';
-  document.getElementById('carga-resumen').innerHTML =
+
+  document.getElementById('notas-masivas-resumen').innerHTML =
     '<div style="text-align:center;padding:16px;background:var(--teal-50);border-radius:10px;border:1px solid var(--teal-100)">'
-    + '<div style="font-size:32px;font-weight:700;color:' + okColor + '">' + data.transferencias + '</div>'
-    + '<div style="font-size:13px;color:var(--teal-600)">Transferencias exitosas</div></div>'
+    + '<div style="font-size:32px;font-weight:700;color:' + okColor + '">' + data.notas_creadas + '</div>'
+    + '<div style="font-size:13px;color:var(--teal-600)">Notas creadas</div></div>'
     + '<div style="text-align:center;padding:16px;background:' + (data.errores > 0 ? 'var(--red-50)' : 'var(--gray-50)') + ';border-radius:10px;border:1px solid ' + (data.errores > 0 ? 'var(--red-100)' : 'var(--gray-100)') + '">'
     + '<div style="font-size:32px;font-weight:700;color:' + errColor + '">' + data.errores + '</div>'
-    + '<div style="font-size:13px;color:' + errColor + '">Filas con error</div></div>';
+    + '<div style="font-size:13px;color:' + errColor + '">Errores</div></div>';
 
-  // OK rows
-  var okCard = document.getElementById('carga-ok-card');
+  var okCard = document.getElementById('notas-ok-card');
   if (data.detalle && data.detalle.length) {
     okCard.style.display = 'block';
-    document.getElementById('carga-ok-tbody').innerHTML = data.detalle.map(function(r) {
+    document.getElementById('notas-ok-tbody').innerHTML = data.detalle.map(function(n) {
+      var tipoLabel = n.tipo === 'NE_PRODUCTO' ? 'NE Producto' : 'Nota Envio';
       return '<tr>'
-        + '<td style="color:var(--text-3);font-size:12px">Fila ' + r.fila + '</td>'
-        + '<td class="mono" style="font-size:12px">' + r.referencia + '</td>'
-        + '<td class="mono" style="font-size:12px">' + r.numero_lote + '</td>'
-        + '<td><strong>' + r.cantidad + '</strong></td>'
-        + '<td><span class="badge badge-teal">' + r.maleta + '</span></td>'
+        + '<td class="mono"><strong>' + n.numero_nota + '</strong></td>'
+        + '<td><span class="badge badge-gray">' + tipoLabel + '</span></td>'
+        + '<td>' + fmt(n.fecha) + '</td>'
+        + '<td>' + n.destino + '</td>'
+        + '<td><strong>' + n.productos + '</strong> prod.</td>'
         + '</tr>';
     }).join('');
-  } else {
-    okCard.style.display = 'none';
-  }
+  } else { okCard.style.display = 'none'; }
 
-  // Error rows
-  var errCard = document.getElementById('carga-err-card');
+  var errCard = document.getElementById('notas-err-card');
   if (data.detalle_errores && data.detalle_errores.length) {
     errCard.style.display = 'block';
-    document.getElementById('carga-err-tbody').innerHTML = data.detalle_errores.map(function(err) {
-      // Parse "Fila X: motivo"
-      var parts = err.match(/^(Fila \d+): (.+)$/);
-      var fila = parts ? parts[1] : '-';
+    document.getElementById('notas-err-tbody').innerHTML = data.detalle_errores.map(function(err) {
+      var parts = err.match(/^((?:Fila|Nota) [\d\w]+): (.+)$/);
+      var ref = parts ? parts[1] : '-';
       var motivo = parts ? parts[2] : err;
       return '<tr>'
-        + '<td style="color:var(--text-3);font-size:12px;white-space:nowrap">' + fila + '</td>'
+        + '<td style="color:var(--text-3);font-size:12px;white-space:nowrap">' + ref + '</td>'
         + '<td style="font-size:12px;color:var(--red-800)">' + motivo + '</td>'
         + '</tr>';
     }).join('');
+  } else { errCard.style.display = 'none'; }
+
+  document.getElementById('notas-masivas-resultados').scrollIntoView({behavior:'smooth'});
+
+  if (data.errores === 0 && data.notas_creadas > 0) {
+    showAlert(data.notas_creadas + ' notas de envio creadas correctamente.');
+  } else if (data.notas_creadas > 0 && data.errores > 0) {
+    showAlert(data.notas_creadas + ' notas creadas, ' + data.errores + ' con errores. Revisa el detalle.', 'error');
   } else {
-    errCard.style.display = 'none';
-  }
-
-  // Scroll to results
-  document.getElementById('carga-resultados').scrollIntoView({behavior:'smooth'});
-
-  if (data.errores === 0 && data.transferencias > 0) {
-    showAlert(data.transferencias + ' productos transferidos correctamente a las maletas.');
-  } else if (data.transferencias > 0 && data.errores > 0) {
-    showAlert(data.transferencias + ' transferidas, ' + data.errores + ' con error. Revisa el detalle abajo.', 'error');
-  } else if (data.errores > 0 && data.transferencias === 0) {
-    showAlert('Ninguna transferencia realizada. Revisa los errores en el detalle.', 'error');
+    showAlert('Ninguna nota creada. Revisa los errores en el detalle.', 'error');
   }
 }
 
