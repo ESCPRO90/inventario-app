@@ -915,7 +915,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>N°</th><th>Tipo</th><th>Fecha</th><th>Cliente / Destino</th><th>Estado</th><th>Dirección</th><th>PDF</th></tr>
+              <tr><th>N°</th><th>Tipo</th><th>Fecha</th><th>Cliente / Destino</th><th>Estado</th><th>Dirección</th><th>Acciones</th></tr>
             </thead>
             <tbody id="notas-tbody">
               <tr><td colspan="7"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>
@@ -4607,6 +4607,118 @@ function mostrarResultadosNotas(data) {
   else showAlert('Ninguna nota creada. Revisa los errores.', 'error');
 }
 
+
+// ── VER Y EDITAR NOTAS ──
+var currentNotaId = null;
+var currentNotaTipo = null;
+
+async function verDetalleNota(notaId) {
+  currentNotaId = notaId;
+  openModal('modal-ver-nota');
+  document.getElementById('vn-items-tbody').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  try {
+    var n = await api('/notas/' + notaId);
+    currentNotaTipo = n.tipo;
+    document.getElementById('ver-nota-titulo').textContent = 'Nota ' + n.numero;
+    document.getElementById('vn-tipo').textContent = n.tipo === 'NE_PRODUCTO' ? 'NE de Producto' : 'Nota de Envio';
+    document.getElementById('vn-fecha').textContent = fmt(n.fecha);
+    var estados = { BORRADOR:'badge-gray', ENVIADA:'badge-blue', FACTURADA:'badge-teal', DEVUELTA:'badge-amber' };
+    document.getElementById('vn-estado').innerHTML = '<span class="badge ' + (estados[n.estado]||'badge-gray') + '">' + n.estado + '</span>';
+    document.getElementById('vn-destino').textContent = n.cliente ? n.cliente.nombre : (n.maleta ? n.maleta.nombre : '-');
+    document.getElementById('vn-dir').innerHTML = '<span class="badge ' + (n.direccion==='ENTRADA'?'badge-amber':'badge-teal') + '">' + n.direccion + '</span>';
+    document.getElementById('vn-bienes').textContent = n.bienes_titulo_de || '-';
+    document.getElementById('vn-autoriza').textContent = n.usuario_autoriza || '-';
+    document.getElementById('vn-entrega').textContent = n.usuario_entrega || '-';
+    document.getElementById('vn-recibe').textContent = n.usuario_recibe || '-';
+    document.getElementById('vn-pdf-btn').onclick = function() { imprimirNota(notaId, n.tipo); };
+    var items = n.items || [];
+    document.getElementById('vn-items-tbody').innerHTML = items.length ? items.map(function(item) {
+      var lote = item.lote || {};
+      var prod = lote.producto || {};
+      var days = lote.fecha_vencimiento ? Math.floor((new Date(lote.fecha_vencimiento+'T00:00:00') - new Date())/86400000) : 9999;
+      var color = days < 0 ? 'color:var(--red-800)' : days <= 60 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : '';
+      return '<tr>'
+        + '<td class="mono" style="font-size:12px">' + (prod.referencia||'-') + '</td>'
+        + '<td style="font-size:12px">' + (prod.descripcion||'-').substring(0,35) + '</td>'
+        + '<td class="mono" style="font-size:12px">' + (lote.numero_lote||'-') + '</td>'
+        + '<td style="font-size:12px;' + color + '">' + (lote.fecha_vencimiento ? fmt(lote.fecha_vencimiento) : '-') + '</td>'
+        + '<td><strong>' + (item.cantidad||0) + '</strong></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:20px">Sin productos</td></tr>';
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); closeModal('modal-ver-nota'); }
+}
+
+function editarNotaDesdeVer() {
+  closeModal('modal-ver-nota');
+  editarNota(currentNotaId);
+}
+
+async function editarNota(notaId) {
+  currentNotaId = notaId;
+  openModal('modal-editar-nota');
+  document.getElementById('en-items-tbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Cargando...</div></td></tr>';
+  try {
+    var n = await api('/notas/' + notaId);
+    document.getElementById('editar-nota-titulo').textContent = 'Editar nota ' + n.numero;
+    document.getElementById('en-id').value = n.id;
+    document.getElementById('en-tipo').value = n.tipo;
+    document.getElementById('en-numero').value = n.numero;
+    document.getElementById('en-fecha').value = n.fecha;
+    document.getElementById('en-estado').value = n.estado;
+    document.getElementById('en-direccion').value = n.direccion;
+    document.getElementById('en-bienes').value = n.bienes_titulo_de || '';
+    document.getElementById('en-autoriza').value = n.usuario_autoriza || '';
+    document.getElementById('en-entrega').value = n.usuario_entrega || '';
+    document.getElementById('en-recibe').value = n.usuario_recibe || '';
+    var items = n.items || [];
+    document.getElementById('en-items-tbody').innerHTML = items.length ? items.map(function(item) {
+      var lote = item.lote || {};
+      var prod = lote.producto || {};
+      var itemId = item.id;
+      return '<tr id="en-item-' + itemId + '">'
+        + '<td class="mono" style="font-size:12px">' + (prod.referencia||'-') + '</td>'
+        + '<td style="font-size:12px">' + (prod.descripcion||'-').substring(0,28) + '</td>'
+        + '<td class="mono" style="font-size:12px">' + (lote.numero_lote||'-') + '</td>'
+        + '<td style="font-size:12px">' + (lote.fecha_vencimiento ? fmt(lote.fecha_vencimiento) : '-') + '</td>'
+        + '<td><input type="number" min="1" value="' + (item.cantidad||0) + '" id="en-cant-' + itemId + '" style="width:70px;font-size:12px"></td>'
+        + '<td><button class="btn btn-outline" style="font-size:11px;padding:2px 8px" onclick="guardarItemNota(\'' + itemId + '\')">Guardar</button></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px">Sin productos</td></tr>';
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); closeModal('modal-editar-nota'); }
+}
+
+async function guardarNota() {
+  var id = document.getElementById('en-id').value;
+  var numero = document.getElementById('en-numero').value.trim();
+  var fecha = document.getElementById('en-fecha').value;
+  if (!numero || !fecha) { showAlert('Numero y fecha son requeridos.', 'error'); return; }
+  try {
+    await api('/notas/' + id, { method: 'PATCH', body: JSON.stringify({
+      numero: numero,
+      fecha: fecha,
+      estado: document.getElementById('en-estado').value,
+      direccion: document.getElementById('en-direccion').value,
+      bienes_titulo_de: document.getElementById('en-bienes').value || null,
+      usuario_autoriza: document.getElementById('en-autoriza').value || null,
+      usuario_entrega: document.getElementById('en-entrega').value || null,
+      usuario_recibe: document.getElementById('en-recibe').value || null,
+    })});
+    showAlert('Encabezado actualizado correctamente.');
+    loadNotas();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function guardarItemNota(itemId) {
+  var cant = parseInt(document.getElementById('en-cant-' + itemId).value) || 0;
+  if (cant < 1) { showAlert('La cantidad debe ser al menos 1.', 'error'); return; }
+  try {
+    await api('/notas/items/' + itemId, { method: 'PATCH', body: JSON.stringify({ cantidad: cant }) });
+    var row = document.getElementById('en-item-' + itemId);
+    if (row) { row.style.background = '#e1f5ee'; setTimeout(function(){ row.style.background=''; }, 1500); }
+    showAlert('Cantidad actualizada.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -4877,6 +4989,115 @@ checkSession();
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('modal-editar-cliente')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarCliente()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLE NOTA -->
+<div class="modal-overlay" id="modal-ver-nota">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <div class="modal-title" id="ver-nota-titulo">Detalle de nota</div>
+      <button class="modal-close" onclick="closeModal('modal-ver-nota')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;padding:12px;background:var(--teal-50);border-radius:8px">
+        <div><div style="font-size:11px;color:var(--text-2)">Tipo</div><div style="font-size:13px;font-weight:500" id="vn-tipo"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Fecha</div><div style="font-size:13px;font-weight:500" id="vn-fecha"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Estado</div><div id="vn-estado"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Cliente / Destino</div><div style="font-size:13px;font-weight:500" id="vn-destino"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Dirección</div><div id="vn-dir"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Bienes a título de</div><div style="font-size:13px" id="vn-bienes"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;padding:10px 12px;background:var(--gray-50);border-radius:8px">
+        <div><div style="font-size:11px;color:var(--text-2)">Autoriza</div><div style="font-size:13px" id="vn-autoriza"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Entrega</div><div style="font-size:13px" id="vn-entrega"></div></div>
+        <div><div style="font-size:11px;color:var(--text-2)">Recibe</div><div style="font-size:13px" id="vn-recibe"></div></div>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--teal-800);margin-bottom:8px">Productos</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Referencia</th><th>Descripcion</th><th>Lote</th><th>Vencimiento</th><th>Cantidad</th></tr></thead>
+          <tbody id="vn-items-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-ver-nota')">Cerrar</button>
+      <button class="btn btn-outline" onclick="editarNotaDesdeVer()">Editar</button>
+      <button class="btn btn-primary" id="vn-pdf-btn">Descargar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR NOTA -->
+<div class="modal-overlay" id="modal-editar-nota">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-head">
+      <div class="modal-title" id="editar-nota-titulo">Editar nota</div>
+      <button class="modal-close" onclick="closeModal('modal-editar-nota')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="en-id">
+      <input type="hidden" id="en-tipo">
+      <div style="background:var(--teal-50);border:1px solid var(--teal-100);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--teal-800);margin-bottom:10px">DATOS DE LA NOTA</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>N° Nota</label>
+            <input type="text" id="en-numero">
+          </div>
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" id="en-fecha">
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="en-estado">
+              <option value="BORRADOR">Borrador</option>
+              <option value="ENVIADA">Enviada</option>
+              <option value="FACTURADA">Facturada</option>
+              <option value="DEVUELTA">Devuelta</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Dirección</label>
+            <select id="en-direccion">
+              <option value="SALIDA">Salida</option>
+              <option value="ENTRADA">Entrada (devolución)</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Bienes a título de</label>
+            <input type="text" id="en-bienes">
+          </div>
+          <div class="form-group">
+            <label>Autoriza</label>
+            <input type="text" id="en-autoriza">
+          </div>
+          <div class="form-group">
+            <label>Entrega</label>
+            <input type="text" id="en-entrega">
+          </div>
+          <div class="form-group full">
+            <label>Recibe</label>
+            <input type="text" id="en-recibe">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button class="btn btn-primary" style="font-size:12px" onclick="guardarNota()">Guardar encabezado</button>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:var(--teal-800);margin-bottom:8px">PRODUCTOS — editar cantidades</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Referencia</th><th>Descripcion</th><th>Lote</th><th>Vence</th><th>Cantidad</th><th>Guardar</th></tr></thead>
+          <tbody id="en-items-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-editar-nota')">Cerrar</button>
     </div>
   </div>
 </div>
