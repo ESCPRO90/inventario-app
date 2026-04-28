@@ -4870,21 +4870,16 @@ function exportarReporteProductoPDF() {
 // ── EDITAR PRODUCTO DESDE BODEGA ──
 var epStockId = null;
 
-async function abrirEditarProducto(loteId) {
+function abrirEditarProducto(loteId, ref, desc, lote, vence, cant, ubicId) {
   if (!loteId) { showAlert('No se pudo obtener el ID del lote.', 'error'); return; }
-
-  // Buscar el item en stockData
-  var item = stockData.find(function(s) { return s.lote_id === loteId; });
-  if (!item) { showAlert('Producto no encontrado en el cache. Actualizá la bodega.', 'error'); return; }
-
   document.getElementById('ep-lote-id').value = loteId;
-  document.getElementById('ep-referencia').value = item.referencia || '';
+  document.getElementById('ep-referencia').value = ref || '';
   document.getElementById('ep-codigo-barra').value = '';
-  document.getElementById('ep-descripcion').value = item.descripcion || '';
-  document.getElementById('ep-lote').value = item.numero_lote || '';
-  document.getElementById('ep-vencimiento').value = item.fecha_vencimiento || '';
-  document.getElementById('ep-cantidad').value = item.cantidad || 0;
-  epStockId = item.ubicacion_id || null;
+  document.getElementById('ep-descripcion').value = desc || '';
+  document.getElementById('ep-lote').value = lote || '';
+  document.getElementById('ep-vencimiento').value = vence || '';
+  document.getElementById('ep-cantidad').value = cant || 0;
+  epStockId = ubicId || null;
   openModal('modal-editar-producto');
 }
 
