@@ -4579,13 +4579,19 @@ function mostrarResultadosNotas(data) {
   document.getElementById('notas-masivas-resultados').style.display = 'block';
   var okC = data.notas_creadas > 0 ? 'var(--teal-800)' : 'var(--text-3)';
   var errC = data.errores > 0 ? 'var(--red-800)' : 'var(--text-3)';
+  var cliC = (data.clientes_creados||0) > 0 ? 'var(--blue-800)' : 'var(--text-3)';
   document.getElementById('notas-masivas-resumen').innerHTML =
     '<div style="text-align:center;padding:16px;background:var(--teal-50);border-radius:10px;border:1px solid var(--teal-100)">'
     + '<div style="font-size:32px;font-weight:700;color:' + okC + '">' + data.notas_creadas + '</div>'
     + '<div style="font-size:13px;color:var(--teal-600)">Notas creadas</div></div>'
     + '<div style="text-align:center;padding:16px;background:' + (data.errores?'var(--red-50)':'var(--gray-50)') + ';border-radius:10px;border:1px solid ' + (data.errores?'var(--red-100)':'var(--gray-100)') + '">'
     + '<div style="font-size:32px;font-weight:700;color:' + errC + '">' + data.errores + '</div>'
-    + '<div style="font-size:13px;color:' + errC + '">Errores</div></div>';
+    + '<div style="font-size:13px;color:' + errC + '">Errores</div></div>'
+    + '<div style="text-align:center;padding:16px;background:var(--blue-50);border-radius:10px;border:1px solid var(--blue-100);grid-column:1/-1">'
+    + '<div style="font-size:24px;font-weight:700;color:' + cliC + '">' + (data.clientes_creados||0) + '</div>'
+    + '<div style="font-size:13px;color:var(--blue-800)">Clientes nuevos creados automáticamente</div>'
+    + ((data.nuevos_clientes&&data.nuevos_clientes.length) ? '<div style="font-size:11px;color:var(--text-3);margin-top:4px">' + data.nuevos_clientes.join(', ') + '</div>' : '')
+    + '</div>';
   var okCard = document.getElementById('notas-ok-card');
   if (data.detalle && data.detalle.length) {
     okCard.style.display = 'block';
