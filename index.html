@@ -792,6 +792,7 @@
                 <th>Vence</th>
                 <th>Cant.</th>
                 <th>Estado</th>
+                <th>Editar</th>
               </tr>
             </thead>
             <tbody id="stock-tbody">
@@ -4865,6 +4866,60 @@ function exportarReporteProductoPDF() {
   showAlert('Reporte PDF descargado.');
 }
 
+
+// ── EDITAR PRODUCTO DESDE BODEGA ──
+var epStockId = null;
+
+async function abrirEditarProducto(loteId) {
+  if (!loteId) { showAlert('No se pudo obtener el ID del lote.', 'error'); return; }
+
+  // Buscar el item en stockData
+  var item = stockData.find(function(s) { return s.lote_id === loteId; });
+  if (!item) { showAlert('Producto no encontrado en el cache. Actualizá la bodega.', 'error'); return; }
+
+  document.getElementById('ep-lote-id').value = loteId;
+  document.getElementById('ep-referencia').value = item.referencia || '';
+  document.getElementById('ep-codigo-barra').value = '';
+  document.getElementById('ep-descripcion').value = item.descripcion || '';
+  document.getElementById('ep-lote').value = item.numero_lote || '';
+  document.getElementById('ep-vencimiento').value = item.fecha_vencimiento || '';
+  document.getElementById('ep-cantidad').value = item.cantidad || 0;
+  epStockId = item.ubicacion_id || null;
+  openModal('modal-editar-producto');
+}
+
+async function guardarProductoEdicion() {
+  var loteId = document.getElementById('ep-lote-id').value;
+  var referencia = document.getElementById('ep-referencia').value.trim().toUpperCase();
+  var descripcion = document.getElementById('ep-descripcion').value.trim();
+  var numeroLote = document.getElementById('ep-lote').value.trim().toUpperCase();
+  var vencimiento = document.getElementById('ep-vencimiento').value;
+  var cantidad = parseInt(document.getElementById('ep-cantidad').value);
+
+  if (!referencia || !descripcion || !numeroLote || !vencimiento) {
+    showAlert('Completa todos los campos obligatorios.', 'error'); return;
+  }
+
+  try {
+    // Usar el endpoint de entradas/items para actualizar lote + descripcion + cantidad
+    await api('/entradas/items/' + loteId + '/editar-directo', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        referencia: referencia,
+        descripcion: descripcion,
+        codigo_barra: document.getElementById('ep-codigo-barra').value.trim() || null,
+        numero_lote: numeroLote,
+        fecha_vencimiento: vencimiento,
+        cantidad: cantidad,
+        ubicacion_id: epStockId,
+      }),
+    });
+    closeModal('modal-editar-producto');
+    showAlert('Producto actualizado correctamente.');
+    loadStock();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
 // ── INIT ──
 initReporteDates();
 checkSession();
@@ -5135,6 +5190,53 @@ checkSession();
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('modal-editar-cliente')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarCliente()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PRODUCTO BODEGA -->
+<div class="modal-overlay" id="modal-editar-producto">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div class="modal-title">Editar producto</div>
+      <button class="modal-close" onclick="closeModal('modal-editar-producto')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-lote-id">
+      <input type="hidden" id="ep-producto-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Referencia *</label>
+          <input type="text" id="ep-referencia" placeholder="Ej: 46152B">
+        </div>
+        <div class="form-group">
+          <label>Código de barras</label>
+          <input type="text" id="ep-codigo-barra" placeholder="Opcional">
+        </div>
+        <div class="form-group full">
+          <label>Descripción *</label>
+          <input type="text" id="ep-descripcion" placeholder="Nombre del producto">
+        </div>
+        <div class="form-group">
+          <label>N° Lote *</label>
+          <input type="text" id="ep-lote" placeholder="Número de lote">
+        </div>
+        <div class="form-group">
+          <label>Fecha vencimiento *</label>
+          <input type="date" id="ep-vencimiento">
+        </div>
+        <div class="form-group">
+          <label>Cantidad en bodega *</label>
+          <input type="number" id="ep-cantidad" min="0">
+        </div>
+      </div>
+      <div style="background:var(--amber-50);border:1px solid var(--amber-100);border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:var(--amber-800)">
+        ⚠️ Cambiar la cantidad ajusta el stock directamente. Usar solo para correcciones.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-editar-producto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProductoEdicion()">Guardar cambios</button>
     </div>
   </div>
 </div>
