@@ -2011,9 +2011,11 @@ async function loadStock() {
 }
 
 function renderStock(data) {
-  const q = document.getElementById('stock-search').value.toLowerCase();
+  const q = document.getElementById('stock-search').value.trim().toLowerCase();
   const filtered = q ? data.filter(i =>
-    i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q)) : data;
+    String(i.referencia || '').toLowerCase().includes(q) ||
+    String(i.descripcion || '').toLowerCase().includes(q) ||
+    String(i.numero_lote || '').toLowerCase().includes(q)) : data;
   document.getElementById('stock-tbody').innerHTML = filtered.length ? filtered.map(i => `
     <tr>
       <td class="mono">${i.referencia}</td>
@@ -2062,9 +2064,9 @@ function filtrarMaleta() {
   var q = (document.getElementById('maleta-buscar').value || '').trim().toLowerCase();
   var infoEl = document.getElementById('maleta-buscar-info');
   var filtered = q ? maletaDataCache.filter(function(i) {
-    return i.referencia.toLowerCase().includes(q)
-      || i.descripcion.toLowerCase().includes(q)
-      || (i.numero_lote || '').toLowerCase().includes(q);
+    return String(i.referencia || '').toLowerCase().includes(q)
+      || String(i.descripcion || '').toLowerCase().includes(q)
+      || String(i.numero_lote || '').toLowerCase().includes(q);
   }) : maletaDataCache;
   if (infoEl) infoEl.textContent = q ? ('Mostrando ' + filtered.length + ' de ' + maletaDataCache.length + ' productos') : '';
   renderMaletaRows(filtered);
