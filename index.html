@@ -2110,18 +2110,44 @@ async function loadStock() {
 }
 
 function renderStock(data) {
-  const q = document.getElementById('stock-search').value.toLowerCase();
-  const filtered = q ? data.filter(i =>
-    i.referencia.toLowerCase().includes(q) || i.descripcion.toLowerCase().includes(q)) : data;
-  document.getElementById('stock-tbody').innerHTML = filtered.length ? filtered.map(i => `
-    <tr>
-      <td class="mono">${i.referencia}</td>
-      <td>${i.descripcion.substring(0,45)}${i.descripcion.length>45?'…':''}</td>
-      <td class="mono">${i.numero_lote}</td>
-      <td>${fmt(i.fecha_vencimiento)}</td>
-      <td><strong>${i.cantidad}</strong></td>
-      <td>${venceBadge(i.fecha_vencimiento)}</td>
-    </tr>`).join('') : `<tr><td colspan="6"><div class="empty"><p>Sin resultados</p></div></td></tr>`;
+  var q = document.getElementById('stock-search').value.trim().toLowerCase();
+  var filtered = q ? data.filter(function(i) {
+    return String(i.referencia||'').toLowerCase().includes(q) ||
+           String(i.descripcion||'').toLowerCase().includes(q) ||
+           String(i.numero_lote||'').toLowerCase().includes(q);
+  }) : data;
+  var tbody = document.getElementById('stock-tbody');
+  tbody.innerHTML = '';
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><p>Sin resultados</p></div></td></tr>';
+    return;
+  }
+  filtered.forEach(function(i) {
+    var tr = document.createElement('tr');
+    var desc = (i.descripcion||'');
+    tr.innerHTML = '<td class="mono">' + (i.referencia||'') + '</td>'
+      + '<td>' + (desc.length>45 ? desc.substring(0,45)+'…' : desc) + '</td>'
+      + '<td class="mono">' + (i.numero_lote||'') + '</td>'
+      + '<td>' + fmt(i.fecha_vencimiento) + '</td>'
+      + '<td><strong>' + (i.cantidad||0) + '</strong></td>'
+      + '<td>' + venceBadge(i.fecha_vencimiento) + '</td>'
+      + '<td></td>';
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-outline';
+    btn.style.cssText = 'font-size:11px;padding:3px 8px';
+    btn.textContent = 'Editar';
+    (function(item) {
+      btn.addEventListener('click', function() {
+        abrirEditarProducto(
+          item.lote_id||'', item.referencia||'', item.descripcion||'',
+          item.numero_lote||'', item.fecha_vencimiento||'',
+          item.cantidad||0, item.ubicacion_id||''
+        );
+      });
+    })(i);
+    tr.cells[tr.cells.length-1].appendChild(btn);
+    tbody.appendChild(tr);
+  });
 }
 
 function filterStock() { renderStock(stockData); }
