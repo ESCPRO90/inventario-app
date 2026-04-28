@@ -908,8 +908,16 @@
             <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:3px">Fecha hasta</label>
             <input type="date" id="notas-filtro-hasta" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface)">
           </div>
+          <div style="flex:1;min-width:180px">
+            <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:3px">Buscar referencia o lote</label>
+            <div class="search-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="search-input" id="notas-buscar-ref" placeholder="Ej: 46152B o JRZ9128323" onkeydown="if(event.key==='Enter') buscarNotasPorRef()">
+            </div>
+          </div>
           <div style="display:flex;gap:8px;align-self:flex-end">
-            <button class="btn btn-primary" onclick="loadNotas()">Buscar</button>
+            <button class="btn btn-primary" onclick="loadNotas()">Buscar fecha</button>
+            <button class="btn btn-outline" onclick="buscarNotasPorRef()">Buscar ref/lote</button>
             <button class="btn btn-outline" onclick="limpiarFiltroNotas()">Limpiar</button>
           </div>
         </div>
@@ -4938,6 +4946,66 @@ async function guardarProductoEdicion() {
     closeModal('modal-editar-producto');
     showAlert('Producto actualizado correctamente.');
     loadStock();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+
+// ── BUSCAR NOTAS POR REFERENCIA O LOTE ──
+async function buscarNotasPorRef() {
+  var q = document.getElementById('notas-buscar-ref').value.trim().toUpperCase();
+  if (!q) { showAlert('Ingresa una referencia o numero de lote.', 'error'); return; }
+
+  var infoEl = document.getElementById('notas-filtro-info');
+  infoEl.textContent = 'Buscando notas con referencia o lote: ' + q + '...';
+
+  try {
+    // Get all notas and filter by product content
+    var todas = await api('/notas/?limit=500');
+    var coincidencias = [];
+
+    for (var nota of todas) {
+      // Get full nota details to check items
+      var detalle = await api('/notas/' + nota.id);
+      var items = detalle.items || [];
+      var encontrado = items.some(function(item) {
+        var lote = item.lote || {};
+        var prod = lote.producto || {};
+        return String(prod.referencia||'').toUpperCase().includes(q) ||
+               String(lote.numero_lote||'').toUpperCase().includes(q);
+      });
+      if (encontrado) coincidencias.push(detalle);
+    }
+
+    infoEl.textContent = coincidencias.length + ' nota(s) encontradas con "' + q + '"';
+
+    var estados = { BORRADOR:'badge-gray', ENVIADA:'badge-blue', FACTURADA:'badge-teal', DEVUELTA:'badge-amber' };
+    document.getElementById('notas-tbody').innerHTML = coincidencias.length ? coincidencias.map(function(n) {
+      var notaId = n.id;
+      var notaTipo = n.tipo;
+      // Find matching items
+      var items = (n.items||[]).filter(function(item) {
+        var lote = item.lote || {};
+        var prod = lote.producto || {};
+        return String(prod.referencia||'').toUpperCase().includes(q) ||
+               String(lote.numero_lote||'').toUpperCase().includes(q);
+      });
+      var matchInfo = items.map(function(item) {
+        var lote = item.lote || {};
+        var prod = lote.producto || {};
+        return (prod.referencia||'') + ' / ' + (lote.numero_lote||'') + ' (' + item.cantidad + ' uds)';
+      }).join(', ');
+
+      return '<tr style="background:var(--teal-50)">'
+        + '<td class="mono"><strong>' + n.numero + '</strong></td>'
+        + '<td><span class="badge badge-gray">' + (n.tipo==='NE_PRODUCTO'?'NE Producto':'Nota Envio') + '</span></td>'
+        + '<td>' + fmt(n.fecha) + '</td>'
+        + '<td>' + (n.cliente?n.cliente.nombre:(n.maleta?n.maleta.nombre:'-')) + '</td>'
+        + '<td><span class="badge ' + (estados[n.estado]||'badge-gray') + '">' + n.estado + '</span></td>'
+        + '<td><span class="badge ' + (n.direccion==='ENTRADA'?'badge-amber':'badge-teal') + '">' + n.direccion + '</span></td>'
+        + '<td colspan="2" style="font-size:11px;color:var(--teal-800)">' + matchInfo + '</td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="7"><div class="empty"><p>No se encontraron notas con esa referencia o lote.</p></div></td></tr>';
+
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
 
