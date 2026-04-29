@@ -1410,7 +1410,8 @@
           </div>
         </div>
       </div>
-      <div id="notas-masivas-resultados" style="display:none">
+      <div id="notas-masivas-resultados" style="display:none"><div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn btn-outline" id="notas-export-btn" style="display:none"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar reporte Excel</button></div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn btn-outline" id="notas-export-btn" style="display:none"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar reporte Excel</button></div>
         <div class="card" style="margin-bottom:12px">
           <div class="card-head"><div class="card-title">Resumen</div></div>
           <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px" id="notas-masivas-resumen"></div>
@@ -1422,6 +1423,12 @@
         <div class="card" id="notas-err-card" style="display:none">
           <div class="card-head" style="background:var(--red-50)"><div class="card-title" style="color:var(--red-800)">Errores</div></div>
           <div class="table-wrap"><table><thead><tr><th>Referencia</th><th>Motivo</th></tr></thead><tbody id="notas-err-tbody"></tbody></table></div>
+        </div>
+        <div style="margin-top:12px;text-align:right">
+          <button class="btn btn-outline" onclick="exportarResultadoNotasMasivas()">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Descargar reporte Excel
+          </button>
         </div>
       </div>
     </div>
@@ -4802,6 +4809,37 @@ async function procesarCargaMasivaNotas() {
   finally { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Crear notas de envio'; }
 }
 
+
+function exportarErroresExcel(data) {
+  var XLSX = window.XLSX;
+  if (!XLSX) { showAlert('Libreria no disponible.', 'error'); return; }
+  var wb = XLSX.utils.book_new();
+  var errRows = [['Referencia/Nota', 'Motivo del error']];
+  (data.detalle_errores||[]).forEach(function(err) {
+    var p = err.match(/^((?:Fila|Nota) [A-Za-z0-9]+): (.+)$/);
+    errRows.push([p ? p[1] : '-', p ? p[2] : err]);
+  });
+  var wsErr = XLSX.utils.aoa_to_sheet(errRows);
+  wsErr['!cols'] = [{wch:20},{wch:70}];
+  XLSX.utils.book_append_sheet(wb, wsErr, 'Errores');
+  var okRows = [['N Nota', 'Tipo', 'Fecha', 'Destino', 'Productos']];
+  (data.detalle||[]).forEach(function(n) {
+    okRows.push([n.numero_nota, n.tipo, n.fecha, n.destino, n.productos]);
+  });
+  var wsOk = XLSX.utils.aoa_to_sheet(okRows);
+  wsOk['!cols'] = [{wch:12},{wch:16},{wch:14},{wch:30},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsOk, 'Notas creadas');
+  var wsRes = XLSX.utils.aoa_to_sheet([
+    ['Resumen de carga masiva'], [''],
+    ['Notas creadas', data.notas_creadas||0],
+    ['Errores', data.errores||0],
+    ['Clientes nuevos', data.clientes_creados||0],
+  ]);
+  wsRes['!cols'] = [{wch:25},{wch:15}];
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
+  XLSX.writeFile(wb, 'resultado_carga_notas_' + today() + '.xlsx');
+}
+
 function mostrarResultadosNotas(data) {
   document.getElementById('notas-masivas-resultados').style.display = 'block';
   var okC = data.notas_creadas > 0 ? 'var(--teal-800)' : 'var(--text-3)';
@@ -4832,6 +4870,54 @@ function mostrarResultadosNotas(data) {
   if (!data.errores && data.notas_creadas) showAlert(data.notas_creadas + ' notas creadas correctamente.');
   else if (data.notas_creadas && data.errores) showAlert(data.notas_creadas + ' ok, ' + data.errores + ' con error.', 'error');
   else showAlert('Ninguna nota creada. Revisa los errores.', 'error');
+
+  // Guardar para exportar
+  window._ultimaCargaNotas = data;
+}
+
+function exportarResultadoNotasMasivas() {
+  var data = window._ultimaCargaNotas;
+  if (!data) { showAlert('No hay resultados para exportar.', 'error'); return; }
+  var XLSX = window.XLSX;
+  if (!XLSX) { showAlert('Libreria cargando, intenta de nuevo.', 'error'); return; }
+  var wb = XLSX.utils.book_new();
+
+  // Hoja 1: Notas creadas
+  var okData = [['N° Nota', 'Tipo', 'Fecha', 'Destino', 'Productos']];
+  (data.detalle || []).forEach(function(n) {
+    okData.push([n.numero_nota, n.tipo === 'NE_PRODUCTO' ? 'NE Producto' : 'Nota Envio', n.fecha, n.destino, n.productos]);
+  });
+  var wsOk = XLSX.utils.aoa_to_sheet(okData);
+  wsOk['!cols'] = [{wch:12},{wch:14},{wch:14},{wch:30},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsOk, 'Notas creadas');
+
+  // Hoja 2: Errores
+  var errData = [['Referencia', 'Motivo del error']];
+  (data.detalle_errores || []).forEach(function(err) {
+    var idx = err.indexOf(': ');
+    var ref = idx > -1 ? err.substring(0, idx) : '-';
+    var mot = idx > -1 ? err.substring(idx + 2) : err;
+    errData.push([ref, mot]);
+  });
+  var wsErr = XLSX.utils.aoa_to_sheet(errData);
+  wsErr['!cols'] = [{wch:20},{wch:70}];
+  XLSX.utils.book_append_sheet(wb, wsErr, 'Errores');
+
+  // Hoja 3: Resumen
+  var wsRes = XLSX.utils.aoa_to_sheet([
+    ['Resumen de carga masiva de notas'],
+    [],
+    ['Notas creadas exitosamente', data.notas_creadas || 0],
+    ['Errores', data.errores || 0],
+    ['Clientes nuevos creados', data.clientes_creados || 0],
+    [],
+    ['Generado', new Date().toLocaleString('es-SV')],
+  ]);
+  wsRes['!cols'] = [{wch:35},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
+
+  XLSX.writeFile(wb, 'resultado_carga_notas_' + today() + '.xlsx');
+  showAlert('Reporte Excel descargado.');
 }
 
 
