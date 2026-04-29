@@ -5081,67 +5081,105 @@ function buscarReporteProductoDesdeReportes() {
 }
 
 async function _buscarReporteProductoInterno(ref) {
-  var desde = document.getElementById('rp-desde').value;
-  var hasta = document.getElementById('rp-hasta').value;
   var resDiv = document.getElementById('rep-prod-resultado');
   resDiv.style.display = 'none';
 
   try {
-    var productos = await api('/productos/?buscar=' + encodeURIComponent(ref) + '&limit=5');
-    var producto = productos.find(function(p){ return p.referencia.toUpperCase() === ref; }) || productos[0];
-    if (!producto) { showAlert('Producto no encontrado.', 'error'); return; }
-
-    // Get stock
-    var stockBodega = await api('/stock/bodega');
-    var stockTotal = 0;
-    stockBodega.filter(function(s){ return s.referencia === producto.referencia; })
-      .forEach(function(s){ stockTotal += s.cantidad; });
-    for (var mal of ['URO','NEURO','VP1','VP2']) {
-      var sm = await api('/stock/maleta/' + mal);
-      sm.filter(function(s){ return s.referencia === producto.referencia; })
-        .forEach(function(s){ stockTotal += s.cantidad; });
+    // 1. Buscar por lotes con stock — funciona con referencia O numero de lote
+    var lotes = await api('/lotes/buscar?referencia=' + encodeURIComponent(ref) + '&solo_con_stock=false&limit=500');
+    
+    // Si no encuentra por referencia, intentar por lote
+    if (!lotes.length) {
+      lotes = await api('/lotes/buscar?numero_lote=' + encodeURIComponent(ref) + '&solo_con_stock=false&limit=500').catch(function(){ return []; });
     }
 
-    // Get movimientos
-    var allMov = await api('/movimientos/?limit=1000');
-    var tiposEntrada = ['ENTRADA','DEVOLUCION_NOTA','IMPORTACION_INICIAL'];
-    var totalE = 0, totalS = 0;
-    var movsFiltrados = allMov.filter(function(m){ return m.referencia_producto === producto.referencia || m.lote_referencia === producto.referencia; });
+    if (!lotes.length) {
+      // Ultimo intento: buscar en bodega y maletas directamente
+      var todosStocks = [];
+      var sb = await api('/stock/bodega');
+      sb.forEach(function(s){ s._ub = 'Bodega Central'; todosStocks.push(s); });
+      for (var mal of ['URO','NEURO','VP1','VP2']) {
+        var sm = await api('/stock/maleta/' + mal);
+        sm.forEach(function(s){ s._ub = 'Maleta '+mal; todosStocks.push(s); });
+      }
+      lotes = todosStocks.filter(function(s){
+        return String(s.referencia||'').toUpperCase().includes(ref) ||
+               String(s.numero_lote||'').toUpperCase().includes(ref);
+      });
+    }
 
-    // fallback: filter by getting lotes of this producto
-    var lotes = await api('/lotes/buscar?referencia=' + encodeURIComponent(producto.referencia) + '&solo_con_stock=false&limit=200').catch(function(){ return []; });
-    var loteIds = new Set(lotes.map(function(l){ return l.lote_id || l.id; }));
+    if (!lotes.length) { showAlert('Producto no encontrado.', 'error'); return; }
 
-    var movs = allMov.filter(function(m){ return loteIds.has(m.lote_id); });
-    movs.forEach(function(m){
-      if (tiposEntrada.includes(m.tipo)) totalE += m.cantidad;
-      else totalS += m.cantidad;
+    // 2. Obtener stock por ubicacion usando el endpoint general
+    var todosStocks = [];
+    var sb = await api('/stock/bodega');
+    todosStocks = todosStocks.concat(sb.map(function(s){ s._ub = 'Bodega'; return s; }));
+    for (var mal of ['URO','NEURO','VP1','VP2']) {
+      var sm = await api('/stock/maleta/' + mal);
+      todosStocks = todosStocks.concat(sm.map(function(s){ s._ub = 'Maleta '+mal; return s; }));
+    }
+
+    // Filtrar por referencia que coincida
+    var refBase = lotes[0].referencia || ref;
+    var stockProd = todosStocks.filter(function(s){
+      return String(s.referencia||'').toUpperCase() === String(refBase).toUpperCase() ||
+             String(s.referencia||'').toUpperCase().includes(ref) ||
+             String(s.numero_lote||'').toUpperCase().includes(ref);
     });
 
-    rpData = { producto: producto, movimientos: movs, stockTotal: stockTotal, totalEntradas: totalE, totalSalidas: totalS };
+    var stockTotal = stockProd.reduce(function(acc, s){ return acc + (s.cantidad||0); }, 0);
+    var prod = { referencia: refBase, descripcion: lotes[0].descripcion || refBase };
 
-    document.getElementById('rep-prod-nombre').textContent = producto.descripcion || producto.referencia;
-    document.getElementById('rep-prod-ref-label').textContent = producto.referencia;
+    // 3. Obtener movimientos (si existen)
+    var tiposEntrada = ['ENTRADA','DEVOLUCION_NOTA','IMPORTACION_INICIAL'];
+    var movs = [], totalE = 0, totalS = 0;
+    try {
+      var loteIds = new Set(lotes.map(function(l){ return l.lote_id || l.id; }).filter(Boolean));
+      var allMov = await api('/movimientos/?limit=1000');
+      movs = allMov.filter(function(m){ return loteIds.has(m.lote_id); });
+      movs.forEach(function(m){
+        if (tiposEntrada.includes(m.tipo)) totalE += m.cantidad;
+        else totalS += m.cantidad;
+      });
+    } catch(e) {}
+
+    rpData = { producto: prod, movimientos: movs, stockTotal: stockTotal, totalEntradas: totalE, totalSalidas: totalS };
+
+    document.getElementById('rep-prod-nombre').textContent = prod.descripcion;
+    document.getElementById('rep-prod-ref-label').textContent = prod.referencia;
     document.getElementById('rep-prod-stock').textContent = stockTotal;
     document.getElementById('rep-prod-entradas').textContent = '+' + totalE;
     document.getElementById('rep-prod-salidas').textContent = '-' + totalS;
 
+    // 4. Mostrar tabla de stock por ubicacion y lote
     var tipoLabel = { ENTRADA:'Entrada', SALIDA_NOTA:'Salida nota', DEVOLUCION_NOTA:'Devolucion', SALIDA_FACTURA:'Salida factura', TRANSFERENCIA:'Transfer.', ANULACION:'Anulacion', AJUSTE:'Ajuste' };
     var tipoColor = { ENTRADA:'color:var(--teal-800)', DEVOLUCION_NOTA:'color:var(--teal-800)', SALIDA_NOTA:'color:var(--red-800)', SALIDA_FACTURA:'color:var(--red-800)', ANULACION:'color:var(--red-800)' };
 
-    document.getElementById('rep-prod-tbody').innerHTML = movs.length ? movs.map(function(m){
+    // Show stock per lote/ubicacion first, then movements
+    var stockRows = stockProd.map(function(s){
+      var days = s.fecha_vencimiento ? Math.floor((new Date(s.fecha_vencimiento+'T00:00:00')-new Date())/86400000) : 9999;
+      var clrV = days < 0 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : 'color:var(--teal-800)';
+      return '<tr style="border-bottom:1px solid var(--gray-100);background:var(--teal-50)">'
+        + '<td style="padding:7px 8px;font-size:11px">Stock actual</td>'
+        + '<td style="padding:7px 8px;font-size:11px">' + (s._ub||s.ubicacion||'-') + '</td>'
+        + '<td style="padding:7px 8px;font-size:11px;font-family:var(--mono)">' + (s.numero_lote||'-') + ' <span style="font-size:10px;' + clrV + '">Vence:' + fmt(s.fecha_vencimiento) + '</span></td>'
+        + '<td style="padding:7px 8px;text-align:right;font-weight:700;color:var(--teal-800)">'+s.cantidad+'</td>'
+        + '</tr>';
+    }).join('');
+
+    var movRows = movs.length ? movs.map(function(m){
       var fecha = m.fecha ? m.fecha.split('T')[0] : '-';
       var esE = tiposEntrada.includes(m.tipo);
-      var signo = esE ? '+' : '-';
-      var clr = tipoColor[m.tipo] || '';
+      var clr = esE ? 'color:var(--teal-800)' : 'color:var(--red-800)';
       return '<tr style="border-bottom:1px solid var(--gray-100)">'
         + '<td style="padding:7px 8px;font-size:12px">' + fmt(fecha) + '</td>'
         + '<td style="padding:7px 8px;font-size:11px">' + (tipoLabel[m.tipo]||m.tipo) + '</td>'
-        + '<td style="padding:7px 8px;font-size:11px;font-family:var(--mono)">' + (m.lote_id||'').substring(0,10) + '</td>'
-        + '<td style="padding:7px 8px;text-align:right;font-weight:600;' + clr + '">' + signo + m.cantidad + '</td>'
+        + '<td style="padding:7px 8px;font-size:11px;font-family:var(--mono)">' + (m.lote_id||'').substring(0,12) + '</td>'
+        + '<td style="padding:7px 8px;text-align:right;font-weight:600;' + clr + '">' + (esE?'+':'-') + m.cantidad + '</td>'
         + '</tr>';
-    }).join('') : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-3)">Sin movimientos registrados</td></tr>';
+    }).join('') : '<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--text-3);font-size:12px">Sin movimientos registrados (bitácora limpia)</td></tr>';
 
+    document.getElementById('rep-prod-tbody').innerHTML = stockRows + movRows;
     resDiv.style.display = 'block';
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
