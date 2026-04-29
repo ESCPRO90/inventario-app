@@ -2465,27 +2465,60 @@ async function saveEntrada() {
 // ── NOTAS ──
 async function loadNotas() {
   try {
-    const data = await api('/notas/?limit=50');
-    document.getElementById('notas-tbody').innerHTML = data.length ? data.map(n => {
-      const estados = { BORRADOR:'badge-gray', ENVIADA:'badge-blue', FACTURADA:'badge-teal', DEVUELTA:'badge-amber' };
-      var notaId = n.id;
-      var notaTipo = n.tipo;
-      return '<tr>'
-        + '<td class="mono">' + n.numero + '</td>'
-        + '<td><span class="badge badge-gray">' + (n.tipo === 'NE_PRODUCTO' ? 'NE Producto' : 'Nota Envio') + '</span></td>'
-        + '<td>' + fmt(n.fecha) + '</td>'
-        + '<td>' + (n.cliente ? n.cliente.nombre : (n.maleta ? n.maleta.nombre : '-')) + '</td>'
-        + '<td><span class="badge ' + (estados[n.estado]||'badge-gray') + '">' + n.estado + '</span></td>'
-        + '<td><span class="badge ' + (n.direccion==='ENTRADA'?'badge-amber':'badge-teal') + '">' + n.direccion + '</span></td>'
-        + '<td style="display:flex;gap:4px">'
-        + '<button class="btn btn-outline" style="font-size:11px;padding:3px 8px" onclick="verDetalleNota(\'' + notaId + '\')">Ver</button>'
-        + '<button class="btn btn-outline" style="font-size:11px;padding:3px 8px" onclick="editarNota(\'' + notaId + '\')">Editar</button>'
-        + '<button class="btn btn-outline" style="font-size:11px;padding:3px 8px" onclick="imprimirNota(\'' + notaId + '\',\'' + notaTipo + '\')">PDF</button>'
-        + '<button class="btn btn-outline" style="font-size:11px;padding:3px 8px;color:var(--red-800);border-color:var(--red-100)" onclick="eliminarNota(\'' + notaId + '\',\'' + n.numero + '\')">Eliminar</button>'
-        + '</td>'
-        + '</tr>';}).join('') : '<tr><td colspan="7"><div class="empty"><p>Sin notas de envio</p></div></td></tr>';
+    var desde = document.getElementById('notas-filtro-desde') ? document.getElementById('notas-filtro-desde').value : '';
+    var hasta = document.getElementById('notas-filtro-hasta') ? document.getElementById('notas-filtro-hasta').value : '';
+    var url = '/notas/?limit=200';
+    if (desde) url += '&fecha_desde=' + desde;
+    if (hasta) url += '&fecha_hasta=' + hasta;
+    var infoEl = document.getElementById('notas-filtro-info');
+    if (infoEl) infoEl.textContent = (desde||hasta) ? 'Filtrando por fecha' : '';
+    var data = await api(url);
+    var estados = { BORRADOR:'badge-gray', ENVIADA:'badge-blue', FACTURADA:'badge-teal', DEVUELTA:'badge-amber' };
+    var tbody = document.getElementById('notas-tbody');
+    tbody.innerHTML = '';
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><p>Sin notas de envio</p></div></td></tr>';
+    } else {
+      data.forEach(function(n) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td class="mono">' + n.numero + '</td>'
+          + '<td><span class="badge badge-gray">' + (n.tipo==='NE_PRODUCTO'?'NE Producto':'Nota Envio') + '</span></td>'
+          + '<td>' + fmt(n.fecha) + '</td>'
+          + '<td>' + (n.cliente?n.cliente.nombre:(n.maleta?n.maleta.nombre:'-')) + '</td>'
+          + '<td><span class="badge ' + (estados[n.estado]||'badge-gray') + '">' + n.estado + '</span></td>'
+          + '<td><span class="badge ' + (n.direccion==='ENTRADA'?'badge-amber':'badge-teal') + '">' + n.direccion + '</span></td>'
+          + '<td style="display:flex;gap:4px;flex-wrap:wrap"></td>';
+        var td = tr.cells[tr.cells.length-1];
+        var btnVer = document.createElement('button');
+        btnVer.className = 'btn btn-outline';
+        btnVer.style.cssText = 'font-size:11px;padding:3px 8px';
+        btnVer.textContent = 'Ver';
+        (function(id){ btnVer.addEventListener('click', function(){ verDetalleNota(id); }); })(n.id);
+        td.appendChild(btnVer);
+        var btnEdit = document.createElement('button');
+        btnEdit.className = 'btn btn-outline';
+        btnEdit.style.cssText = 'font-size:11px;padding:3px 8px';
+        btnEdit.textContent = 'Editar';
+        (function(id){ btnEdit.addEventListener('click', function(){ editarNota(id); }); })(n.id);
+        td.appendChild(btnEdit);
+        var btnPDF = document.createElement('button');
+        btnPDF.className = 'btn btn-outline';
+        btnPDF.style.cssText = 'font-size:11px;padding:3px 8px';
+        btnPDF.textContent = 'PDF';
+        (function(id,tipo){ btnPDF.addEventListener('click', function(){ imprimirNota(id,tipo); }); })(n.id,n.tipo);
+        td.appendChild(btnPDF);
+        var btnDel = document.createElement('button');
+        btnDel.className = 'btn btn-outline';
+        btnDel.style.cssText = 'font-size:11px;padding:3px 8px;color:var(--red-800);border-color:var(--red-100)';
+        btnDel.textContent = 'Eliminar';
+        (function(id,num){ btnDel.addEventListener('click', function(){ eliminarNota(id,num); }); })(n.id,n.numero);
+        td.appendChild(btnDel);
+        tbody.appendChild(tr);
+      });
+    }
   } catch(e) { showAlert(e.message, 'error'); }
 }
+
 
 // addNotaItem defined below
 
