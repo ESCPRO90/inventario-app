@@ -710,6 +710,10 @@
       <svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
       Bitácora
     </div>
+    <div class="sidebar-item" data-page="catalogo-admin">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Catálogo productos
+    </div>
     <div class="sidebar-item" data-page="reportes">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Reportes PDF
@@ -1245,6 +1249,85 @@
           <div id="trans-carrito-body"></div>
           <div style="display:flex;justify-content:flex-end;margin-top:12px">
             <button class="btn btn-primary" onclick="ejecutarTransferencia()">Ejecutar transferencia</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATÁLOGO ADMIN -->
+    <div class="page" id="page-catalogo-admin">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Catálogo de productos</div>
+          <div class="page-subtitle">Corregir referencias, descripciones y fusionar productos duplicados</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+        <!-- PASO 1: DESCARGAR -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">Paso 1 — Descargar catálogo</div></div>
+          <div style="padding:16px">
+            <p style="font-size:13px;color:var(--text-2);margin-bottom:12px">
+              Descargá todos los productos en Excel. Las columnas amarillas son editables (referencia_nueva y descripcion_nueva).
+              Si dos productos tienen la misma referencia_nueva, se fusionan automáticamente.
+            </p>
+            <button class="btn btn-primary" onclick="descargarCatalogoExcel()" style="width:100%">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- PASO 2: SUBIR -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">Paso 2 — Subir correcciones</div></div>
+          <div style="padding:16px">
+            <p style="font-size:13px;color:var(--text-2);margin-bottom:12px">
+              Subí el Excel editado. Solo se procesan los productos que cambiaron. Los duplicados se fusionan automáticamente.
+            </p>
+            <div class="drop-zone" id="catalogo-drop-zone" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color .2s"
+                 ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+                 ondragleave="this.style.borderColor='var(--border)'"
+                 ondrop="event.preventDefault();this.style.borderColor='var(--border)';catalogoFile=event.dataTransfer.files[0];document.getElementById('catalogo-file-name').textContent=catalogoFile.name"
+                 onclick="document.getElementById('catalogo-file-input').click()">
+              <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--text-3);fill:none;stroke-width:1.5;margin-bottom:8px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div style="font-size:13px;color:var(--text-2)">Arrastrá el archivo o hacé clic</div>
+              <div id="catalogo-file-name" style="font-size:12px;color:var(--primary);margin-top:6px;font-weight:500"></div>
+            </div>
+            <input type="file" id="catalogo-file-input" accept=".xlsx" style="display:none" onchange="catalogoFile=this.files[0];document.getElementById('catalogo-file-name').textContent=catalogoFile.name">
+            <button class="btn btn-primary" onclick="subirCorreccionesCatalogo()" style="width:100%">
+              <svg viewBox="0 0 24 24"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/></svg>
+              Aplicar correcciones
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div id="catalogo-resultados" style="display:none;margin-top:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="metric m-teal"><div class="metric-label">Actualizados</div><div class="metric-val" id="cat-actualizados"></div></div>
+          <div class="metric m-teal"><div class="metric-label">Fusionados</div><div class="metric-val" id="cat-fusionados"></div></div>
+          <div class="metric m-amber"><div class="metric-label">Errores</div><div class="metric-val" id="cat-errores"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Detalle de cambios</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Acción</th><th>Referencia</th><th>Descripción</th><th>Detalle</th></tr></thead>
+              <tbody id="cat-detalle-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" id="cat-errores-card" style="display:none;margin-top:12px">
+          <div class="card-head"><div class="card-title" style="color:var(--red-800)">Errores</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Error</th></tr></thead>
+              <tbody id="cat-errores-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -2062,6 +2145,7 @@ function loadPage(page) {
   else if (page === 'carga-masiva') { cargaFile=null; document.getElementById('carga-resultados').style.display='none'; document.getElementById('carga-file-name').textContent=''; }
   else if (page === 'notas-masivas') { cargaNotasFile=null; document.getElementById('notas-masivas-resultados').style.display='none'; }
   else if (page === 'reporte-producto') { document.getElementById('rp-resumen').style.display='none'; document.getElementById('rp-empty').style.display='none'; document.getElementById('rp-referencia').value=''; document.getElementById('rp-desde').value=''; document.getElementById('rp-hasta').value=''; rpData=null; document.getElementById('rp-export-btn').style.display='none'; }
+  else if (page === 'catalogo-admin') { catalogoFile=null; document.getElementById('catalogo-resultados').style.display='none'; document.getElementById('catalogo-file-name').textContent=''; }
 }
 
 document.querySelectorAll('[data-page]').forEach(el => {
@@ -5191,6 +5275,86 @@ async function buscarNotasPorRef() {
   } catch(e) { showAlert('Error: ' + e.message, 'error'); }
 }
 
+
+// ── CATÁLOGO ADMIN ──
+var catalogoFile = null;
+
+async function descargarCatalogoExcel() {
+  try {
+    showAlert('Generando Excel...');
+    var token = localStorage.getItem('token');
+    var resp = await fetch(API + '/productos-admin/exportar-excel', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) throw new Error('Error al generar el archivo.');
+    var blob = await resp.blob();
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'productos_catalogo.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    showAlert('Excel descargado correctamente.');
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function subirCorreccionesCatalogo() {
+  if (!catalogoFile) { showAlert('Seleccioná un archivo Excel.', 'error'); return; }
+  try {
+    showAlert('Procesando correcciones...');
+    var token = localStorage.getItem('token');
+    var formData = new FormData();
+    formData.append('file', catalogoFile);
+    var resp = await fetch(API + '/productos-admin/importar-correcciones', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData,
+    });
+    if (!resp.ok) {
+      var err = await resp.json();
+      throw new Error(err.detail || 'Error al procesar.');
+    }
+    var data = await resp.json();
+
+    document.getElementById('cat-actualizados').textContent = data.productos_actualizados;
+    document.getElementById('cat-fusionados').textContent = data.productos_fusionados;
+    document.getElementById('cat-errores').textContent = data.errores;
+
+    // Detalle de cambios
+    var cambios = data.detalle_cambios || [];
+    document.getElementById('cat-detalle-tbody').innerHTML = cambios.length ? cambios.map(function(c) {
+      var badge = c.accion === 'fusionado' ? 'badge-amber' : 'badge-teal';
+      var detalle = c.accion === 'fusionado'
+        ? c.producto_eliminado + ' → ' + c.producto_destino + ' (' + c.lotes_movidos + ' lotes)'
+        : (c.desde !== c.referencia ? c.desde + ' → ' + c.referencia : 'descripción actualizada');
+      return '<tr>'
+        + '<td><span class="badge ' + badge + '" style="font-size:10px">' + c.accion.toUpperCase() + '</span></td>'
+        + '<td class="mono">' + (c.referencia || c.producto_destino || '-') + '</td>'
+        + '<td style="font-size:12px">' + (c.descripcion || '-') + '</td>'
+        + '<td style="font-size:12px;color:var(--text-2)">' + detalle + '</td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:20px">Sin cambios detectados</td></tr>';
+
+    // Errores
+    var errs = data.detalle_errores || [];
+    if (errs.length) {
+      document.getElementById('cat-errores-card').style.display = 'block';
+      document.getElementById('cat-errores-tbody').innerHTML = errs.map(function(e) {
+        return '<tr><td style="font-size:12px;color:var(--red-800)">' + e + '</td></tr>';
+      }).join('');
+    } else {
+      document.getElementById('cat-errores-card').style.display = 'none';
+    }
+
+    document.getElementById('catalogo-resultados').style.display = 'block';
+    showAlert(data.mensaje);
+    catalogoFile = null;
+    document.getElementById('catalogo-file-name').textContent = '';
+
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
 
 function buscarReporteProductoDesdeReportes() {
   var ref = document.getElementById('rep-prod-ref').value.trim().toUpperCase();
