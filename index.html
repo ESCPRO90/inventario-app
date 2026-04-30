@@ -1170,65 +1170,19 @@
 
         <!-- REPORTE POR PRODUCTO -->
         <div class="card" style="grid-column:1/-1">
-          <div class="card-head"><div class="card-title">Reporte por producto — entradas y salidas</div></div>
+          <div class="card-head"><div class="card-title">Reporte por producto — historial completo</div></div>
           <div style="padding:16px">
-            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Buscá por referencia o lote para ver el historial completo de movimientos.</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <div style="grid-column:1/-1">
-                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Referencia o N° Lote</div>
-                <input type="text" id="rep-prod-ref" placeholder="Ej: 46152B o JRZ9128323" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px" onkeydown="if(event.key==='Enter') buscarReporteProducto()">
-              </div>
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Buscá por referencia para ver stock, consignaciones, notas y facturas del producto.</div>
+            <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Desde (opcional)</div>
-                <input type="date" id="rp-desde" style="width:100%">
-              </div>
-              <div>
-                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Hasta (opcional)</div>
-                <input type="date" id="rp-hasta" style="width:100%">
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Referencia</div>
+                <input type="text" id="rep-prod-ref" placeholder="Ej: 46152B" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px" onkeydown="if(event.key==='Enter') buscarReporteProductoDesdeReportes()">
               </div>
             </div>
             <button class="btn btn-primary" style="width:100%" onclick="buscarReporteProductoDesdeReportes()">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               Buscar producto
             </button>
-            <div id="rep-prod-resultado" style="margin-top:14px;display:none">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-                <div style="padding:12px;background:var(--teal-50);border-radius:8px;border:1px solid var(--teal-100)">
-                  <div style="font-size:11px;color:var(--text-2)">Producto</div>
-                  <div style="font-size:13px;font-weight:600" id="rep-prod-nombre"></div>
-                  <div style="font-size:11px;color:var(--text-3)" id="rep-prod-ref-label"></div>
-                </div>
-                <div style="padding:12px;background:var(--teal-50);border-radius:8px;border:1px solid var(--teal-100)">
-                  <div style="font-size:11px;color:var(--text-2)">Stock actual</div>
-                  <div style="font-size:24px;font-weight:700;color:var(--teal-800)" id="rep-prod-stock"></div>
-                </div>
-                <div style="padding:12px;background:var(--teal-50);border-radius:8px;border:1px solid var(--teal-100)">
-                  <div style="font-size:11px;color:var(--text-2)">Total entradas</div>
-                  <div style="font-size:24px;font-weight:700;color:var(--teal-800)" id="rep-prod-entradas"></div>
-                </div>
-                <div style="padding:12px;background:var(--amber-50);border-radius:8px;border:1px solid var(--amber-100)">
-                  <div style="font-size:11px;color:var(--text-2)">Total salidas</div>
-                  <div style="font-size:24px;font-weight:700;color:var(--amber-800)" id="rep-prod-salidas"></div>
-                </div>
-              </div>
-              <div style="overflow-x:auto">
-                <table style="width:100%;border-collapse:collapse;font-size:12px">
-                  <thead>
-                    <tr style="background:var(--teal-50)">
-                      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-3)">Fecha</th>
-                      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-3)">Tipo</th>
-                      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-3)">Lote</th>
-                      <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-3)">Cant.</th>
-                    </tr>
-                  </thead>
-                  <tbody id="rep-prod-tbody"></tbody>
-                </table>
-              </div>
-              <button class="btn btn-outline" style="width:100%;margin-top:10px" onclick="exportarReporteProductoPDF()">
-                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Descargar PDF
-              </button>
-            </div>
           </div>
         </div>
 
@@ -2088,6 +2042,12 @@ function navigate(page) {
 }
 
 function loadPage(page) {
+  // Limpiar búsquedas de TODAS las páginas al navegar
+  var searchInputs = ['stock-search','maleta-buscar','notas-buscar-ref','cliente-search','trans-search','rep-prod-ref'];
+  searchInputs.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  var filterInfo = document.getElementById('notas-filtro-info');
+  if (filterInfo) filterInfo.textContent = '';
+
   if (page === 'dashboard')      loadDashboard();
   else if (page === 'stock')     loadStock();
   else if (page === 'maletas')   loadMaleta(currentMaleta);
@@ -2099,9 +2059,9 @@ function loadPage(page) {
   else if (page === 'movimientos') loadMovimientos();
   else if (page === 'transferencias') { loadTransferUbicaciones(); }
   else if (page === 'usuarios') loadUsuarios();
-  else if (page === 'carga-masiva') { cargaFile=null; document.getElementById('carga-resultados').style.display='none'; }
+  else if (page === 'carga-masiva') { cargaFile=null; document.getElementById('carga-resultados').style.display='none'; document.getElementById('carga-file-name').textContent=''; }
   else if (page === 'notas-masivas') { cargaNotasFile=null; document.getElementById('notas-masivas-resultados').style.display='none'; }
-  else if (page === 'reporte-producto') { document.getElementById('rp-resumen').style.display='none'; document.getElementById('rp-empty').style.display='none'; }
+  else if (page === 'reporte-producto') { document.getElementById('rp-resumen').style.display='none'; document.getElementById('rp-empty').style.display='none'; document.getElementById('rp-referencia').value=''; document.getElementById('rp-desde').value=''; document.getElementById('rp-hasta').value=''; rpData=null; document.getElementById('rp-export-btn').style.display='none'; }
 }
 
 document.querySelectorAll('[data-page]').forEach(el => {
@@ -5234,115 +5194,10 @@ async function buscarNotasPorRef() {
 
 function buscarReporteProductoDesdeReportes() {
   var ref = document.getElementById('rep-prod-ref').value.trim().toUpperCase();
-  if (!ref) { showAlert('Ingresa una referencia o lote.', 'error'); return; }
-  // Sync inputs to reporte-producto page
-  var rpRefEl = document.getElementById('rp-referencia');
-  if (rpRefEl) rpRefEl.value = ref;
-  _buscarReporteProductoInterno(ref);
-}
-
-async function _buscarReporteProductoInterno(ref) {
-  var resDiv = document.getElementById('rep-prod-resultado');
-  resDiv.style.display = 'none';
-
-  try {
-    // 1. Buscar por lotes con stock — funciona con referencia O numero de lote
-    var lotes = await api('/lotes/buscar?referencia=' + encodeURIComponent(ref) + '&solo_con_stock=false&limit=500');
-    
-    // Si no encuentra por referencia, intentar por lote
-    if (!lotes.length) {
-      lotes = await api('/lotes/buscar?numero_lote=' + encodeURIComponent(ref) + '&solo_con_stock=false&limit=500').catch(function(){ return []; });
-    }
-
-    if (!lotes.length) {
-      // Ultimo intento: buscar en bodega y maletas directamente
-      var todosStocks = [];
-      var sb = await api('/stock/bodega');
-      sb.forEach(function(s){ s._ub = 'Bodega Central'; todosStocks.push(s); });
-      for (var mal of ['URO','NEURO','VP1','VP2']) {
-        var sm = await api('/stock/maleta/' + mal);
-        sm.forEach(function(s){ s._ub = 'Maleta '+mal; todosStocks.push(s); });
-      }
-      lotes = todosStocks.filter(function(s){
-        return String(s.referencia||'').toUpperCase().includes(ref) ||
-               String(s.numero_lote||'').toUpperCase().includes(ref);
-      });
-    }
-
-    if (!lotes.length) { showAlert('Producto no encontrado.', 'error'); return; }
-
-    // 2. Obtener stock por ubicacion usando el endpoint general
-    var todosStocks = [];
-    var sb = await api('/stock/bodega');
-    todosStocks = todosStocks.concat(sb.map(function(s){ s._ub = 'Bodega'; return s; }));
-    for (var mal of ['URO','NEURO','VP1','VP2']) {
-      var sm = await api('/stock/maleta/' + mal);
-      todosStocks = todosStocks.concat(sm.map(function(s){ s._ub = 'Maleta '+mal; return s; }));
-    }
-
-    // Filtrar por referencia que coincida
-    var refBase = lotes[0].referencia || ref;
-    var stockProd = todosStocks.filter(function(s){
-      return String(s.referencia||'').toUpperCase() === String(refBase).toUpperCase() ||
-             String(s.referencia||'').toUpperCase().includes(ref) ||
-             String(s.numero_lote||'').toUpperCase().includes(ref);
-    });
-
-    var stockTotal = stockProd.reduce(function(acc, s){ return acc + (s.cantidad||0); }, 0);
-    var prod = { referencia: refBase, descripcion: lotes[0].descripcion || refBase };
-
-    // 3. Obtener movimientos (si existen)
-    var tiposEntrada = ['ENTRADA','DEVOLUCION_NOTA','IMPORTACION_INICIAL'];
-    var movs = [], totalE = 0, totalS = 0;
-    try {
-      var loteIds = new Set(lotes.map(function(l){ return l.lote_id || l.id; }).filter(Boolean));
-      var allMov = await api('/movimientos/?limit=1000');
-      movs = allMov.filter(function(m){ return loteIds.has(m.lote_id); });
-      movs.forEach(function(m){
-        if (tiposEntrada.includes(m.tipo)) totalE += m.cantidad;
-        else totalS += m.cantidad;
-      });
-    } catch(e) {}
-
-    rpData = { producto: prod, movimientos: movs, stockTotal: stockTotal, totalEntradas: totalE, totalSalidas: totalS };
-
-    document.getElementById('rep-prod-nombre').textContent = prod.descripcion;
-    document.getElementById('rep-prod-ref-label').textContent = prod.referencia;
-    document.getElementById('rep-prod-stock').textContent = stockTotal;
-    document.getElementById('rep-prod-entradas').textContent = '+' + totalE;
-    document.getElementById('rep-prod-salidas').textContent = '-' + totalS;
-
-    // 4. Mostrar tabla de stock por ubicacion y lote
-    var tipoLabel = { ENTRADA:'Entrada', SALIDA_NOTA:'Salida nota', DEVOLUCION_NOTA:'Devolucion', SALIDA_FACTURA:'Salida factura', TRANSFERENCIA:'Transfer.', ANULACION:'Anulacion', AJUSTE:'Ajuste' };
-    var tipoColor = { ENTRADA:'color:var(--teal-800)', DEVOLUCION_NOTA:'color:var(--teal-800)', SALIDA_NOTA:'color:var(--red-800)', SALIDA_FACTURA:'color:var(--red-800)', ANULACION:'color:var(--red-800)' };
-
-    // Show stock per lote/ubicacion first, then movements
-    var stockRows = stockProd.map(function(s){
-      var days = s.fecha_vencimiento ? Math.floor((new Date(s.fecha_vencimiento+'T00:00:00')-new Date())/86400000) : 9999;
-      var clrV = days < 0 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : 'color:var(--teal-800)';
-      return '<tr style="border-bottom:1px solid var(--gray-100);background:var(--teal-50)">'
-        + '<td style="padding:7px 8px;font-size:11px">Stock actual</td>'
-        + '<td style="padding:7px 8px;font-size:11px">' + (s._ub||s.ubicacion||'-') + '</td>'
-        + '<td style="padding:7px 8px;font-size:11px;font-family:var(--mono)">' + (s.numero_lote||'-') + ' <span style="font-size:10px;' + clrV + '">Vence:' + fmt(s.fecha_vencimiento) + '</span></td>'
-        + '<td style="padding:7px 8px;text-align:right;font-weight:700;color:var(--teal-800)">'+s.cantidad+'</td>'
-        + '</tr>';
-    }).join('');
-
-    var movRows = movs.length ? movs.map(function(m){
-      var fecha = m.fecha ? m.fecha.split('T')[0] : '-';
-      var esE = tiposEntrada.includes(m.tipo);
-      var clr = esE ? 'color:var(--teal-800)' : 'color:var(--red-800)';
-      return '<tr style="border-bottom:1px solid var(--gray-100)">'
-        + '<td style="padding:7px 8px;font-size:12px">' + fmt(fecha) + '</td>'
-        + '<td style="padding:7px 8px;font-size:11px">' + (tipoLabel[m.tipo]||m.tipo) + '</td>'
-        + '<td style="padding:7px 8px;font-size:11px;font-family:var(--mono)">' + (m.lote_id||'').substring(0,12) + '</td>'
-        + '<td style="padding:7px 8px;text-align:right;font-weight:600;' + clr + '">' + (esE?'+':'-') + m.cantidad + '</td>'
-        + '</tr>';
-    }).join('') : '<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--text-3);font-size:12px">Sin movimientos registrados (bitácora limpia)</td></tr>';
-
-    document.getElementById('rep-prod-tbody').innerHTML = stockRows + movRows;
-    resDiv.style.display = 'block';
-  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+  if (!ref) { showAlert('Ingresa una referencia.', 'error'); return; }
+  navigate('reporte-producto');
+  document.getElementById('rp-referencia').value = ref;
+  buscarReporteProducto();
 }
 
 
