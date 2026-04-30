@@ -1438,7 +1438,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Reporte por producto</div>
-          <div class="page-subtitle">Historial completo de entradas y salidas por referencia</div>
+          <div class="page-subtitle">Buscá por referencia o lote para ver el historial completo de movimientos.</div>
         </div>
       </div>
 
@@ -1447,18 +1447,18 @@
         <div style="padding:16px">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
             <div style="flex:1;min-width:220px">
-              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Referencia</label>
+              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Referencia o N° Lote</label>
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input class="search-input" id="rp-referencia" placeholder="Ej: 46152B" onkeydown="if(event.key==='Enter') buscarReporteProducto()">
               </div>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Desde</label>
+              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Desde (opcional)</label>
               <input type="date" id="rp-desde" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px">
             </div>
             <div>
-              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Hasta</label>
+              <label style="font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px">Hasta (opcional)</label>
               <input type="date" id="rp-hasta" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px">
             </div>
             <button class="btn btn-primary" onclick="buscarReporteProducto()">Buscar</button>
@@ -1472,50 +1472,84 @@
 
       <!-- Resumen del producto -->
       <div id="rp-resumen" style="display:none;margin-bottom:16px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+        <!-- Tarjetas resumen -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px;margin-bottom:16px">
           <div class="metric m-teal" style="padding:14px">
             <div class="metric-label">Producto</div>
-            <div style="font-size:14px;font-weight:600;color:var(--teal-900)" id="rp-nombre"></div>
+            <div style="font-size:13px;font-weight:600;color:var(--teal-900)" id="rp-nombre"></div>
             <div class="metric-sub" id="rp-ref-label"></div>
           </div>
           <div class="metric m-teal" style="padding:14px">
-            <div class="metric-label">Stock actual</div>
-            <div class="metric-val" id="rp-stock-actual"></div>
-            <div class="metric-sub">unidades totales</div>
+            <div class="metric-label">Stock total</div>
+            <div class="metric-val" id="rp-stock-total"></div>
           </div>
           <div class="metric m-teal" style="padding:14px">
-            <div class="metric-label">Total entradas</div>
-            <div class="metric-val" id="rp-total-entradas"></div>
-            <div class="metric-sub">unidades ingresadas</div>
+            <div class="metric-label">En bodega</div>
+            <div class="metric-val" id="rp-stock-bodega"></div>
           </div>
           <div class="metric m-amber" style="padding:14px">
-            <div class="metric-label">Total salidas</div>
-            <div class="metric-val" id="rp-total-salidas"></div>
-            <div class="metric-sub">unidades despachadas</div>
+            <div class="metric-label">En consignación</div>
+            <div class="metric-val" id="rp-total-consignado"></div>
+          </div>
+          <div class="metric m-teal" style="padding:14px">
+            <div class="metric-label">En maletas</div>
+            <div class="metric-val" id="rp-stock-maletas"></div>
+          </div>
+          <div class="metric m-amber" style="padding:14px">
+            <div class="metric-label">Facturado</div>
+            <div class="metric-val" id="rp-total-facturado"></div>
           </div>
         </div>
 
-        <!-- Lotes activos -->
+        <!-- Distribución de stock -->
         <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div class="card-title">Lotes con stock disponible</div></div>
+          <div class="card-head"><div class="card-title">Distribución de stock actual</div></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>N° Lote</th><th>Vencimiento</th><th>Bodega</th><th>URO</th><th>NEURO</th><th>VP1</th><th>VP2</th><th>Total</th></tr></thead>
-              <tbody id="rp-lotes-tbody"></tbody>
+              <thead><tr><th>N° Lote</th><th>Vencimiento</th><th>Ubicación</th><th style="text-align:right">Cantidad</th></tr></thead>
+              <tbody id="rp-stock-tbody"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Historial de movimientos -->
-        <div class="card">
+        <!-- Consignaciones -->
+        <div class="card" style="margin-bottom:16px">
           <div class="card-head">
-            <div class="card-title">Historial de movimientos</div>
-            <div id="rp-mov-count" style="font-size:12px;color:var(--text-3)"></div>
+            <div class="card-title">Consignaciones</div>
+            <div id="rp-consig-count" style="font-size:12px;color:var(--text-3)"></div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Fecha</th><th>Tipo</th><th>N° Lote</th><th>Cantidad</th><th>Referencia doc.</th><th>Desde</th><th>Hasta</th></tr></thead>
-              <tbody id="rp-mov-tbody"></tbody>
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>N° Lote</th><th style="text-align:right">Cant.</th><th>Estado</th><th>Origen</th></tr></thead>
+              <tbody id="rp-consig-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Notas de envío -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <div class="card-title">Notas de envío</div>
+            <div id="rp-notas-count" style="font-size:12px;color:var(--text-3)"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>N° Nota</th><th>Destino</th><th>N° Lote</th><th style="text-align:right">Cant.</th><th>Dirección</th><th>Estado</th></tr></thead>
+              <tbody id="rp-notas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Facturas -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Facturas</div>
+            <div id="rp-fact-count" style="font-size:12px;color:var(--text-3)"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>N° Factura</th><th>Cliente</th><th>Tipo</th><th>N° Lote</th><th style="text-align:right">Cant.</th><th>Estado</th></tr></thead>
+              <tbody id="rp-fact-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -4935,112 +4969,103 @@ async function buscarReporteProducto() {
   document.getElementById('rp-export-btn').style.display = 'none';
 
   try {
-    // 1. Buscar el producto
-    var productos = await api('/productos/?buscar=' + encodeURIComponent(ref) + '&limit=5');
-    var producto = productos.find(function(p) { return p.referencia.toUpperCase() === ref; });
-    if (!producto) producto = productos[0];
-    if (!producto) {
-      document.getElementById('rp-empty').style.display = 'block';
-      return;
-    }
+    var url = '/stock/reporte-producto/' + encodeURIComponent(ref);
+    var params = [];
+    if (desde) params.push('fecha_desde=' + desde);
+    if (hasta) params.push('fecha_hasta=' + hasta);
+    if (params.length) url += '?' + params.join('&');
 
-    // 2. Obtener stock por ubicacion
-    var stockBodega = await api('/stock/bodega');
-    var stockAllMaletas = {};
-    for (var mal of ['URO','NEURO','VP1','VP2']) {
-      var s = await api('/stock/maleta/' + mal);
-      stockAllMaletas[mal] = s;
-    }
+    var data = await api(url);
+    var prod = data.producto;
 
-    // Filtrar por producto
-    var lotesProducto = {};
-    var stockTotal = 0;
-
-    // Bodega
-    stockBodega.filter(function(s) { return s.referencia === producto.referencia; }).forEach(function(s) {
-      if (!lotesProducto[s.numero_lote]) lotesProducto[s.numero_lote] = { lote: s.numero_lote, vence: s.fecha_vencimiento, BODEGA:0, URO:0, NEURO:0, VP1:0, VP2:0 };
-      lotesProducto[s.numero_lote].BODEGA += s.cantidad;
+    // Calcular totales desde los datos
+    var stockTotal = 0, stockBodega = 0, stockMaletas = 0;
+    data.stock.forEach(function(s) {
       stockTotal += s.cantidad;
-    });
-    // Maletas
-    for (var mal of ['URO','NEURO','VP1','VP2']) {
-      stockAllMaletas[mal].filter(function(s) { return s.referencia === producto.referencia; }).forEach(function(s) {
-        if (!lotesProducto[s.numero_lote]) lotesProducto[s.numero_lote] = { lote: s.numero_lote, vence: s.fecha_vencimiento, BODEGA:0, URO:0, NEURO:0, VP1:0, VP2:0 };
-        lotesProducto[s.numero_lote][mal] += s.cantidad;
-        stockTotal += s.cantidad;
-      });
-    }
-
-    // 3. Obtener movimientos
-    var movUrl = '/movimientos/?referencia=' + encodeURIComponent(producto.referencia) + '&limit=500';
-    if (desde) movUrl += '&fecha_desde=' + desde;
-    if (hasta) movUrl += '&fecha_hasta=' + hasta;
-    var movimientos = [];
-    try { movimientos = await api(movUrl); } catch(e) {
-      // fallback: get all and filter client-side
-      var allMov = await api('/movimientos/?limit=1000');
-      movimientos = allMov; // will filter by lote_id below
-    }
-
-    // 4. Calcular totales
-    var totalEntradas = 0, totalSalidas = 0;
-    var tiposEntrada = ['ENTRADA', 'DEVOLUCION_NOTA', 'IMPORTACION_INICIAL'];
-    var tiposSalida = ['SALIDA_NOTA', 'SALIDA_FACTURA', 'TRANSFERENCIA'];
-
-    movimientos.forEach(function(m) {
-      if (tiposEntrada.includes(m.tipo)) totalEntradas += m.cantidad;
-      else if (tiposSalida.includes(m.tipo)) totalSalidas += m.cantidad;
+      if (s.ubicacion_tipo === 'BODEGA') stockBodega += s.cantidad;
+      else stockMaletas += s.cantidad;
     });
 
-    // Store for PDF
-    rpData = { producto: producto, lotes: lotesProducto, movimientos: movimientos, stockTotal: stockTotal, totalEntradas: totalEntradas, totalSalidas: totalSalidas, desde: desde, hasta: hasta };
+    var totalConsignado = 0;
+    data.consignaciones.filter(function(c){ return c.estado === 'ACTIVA'; }).forEach(function(c) {
+      totalConsignado += c.cantidad;
+    });
 
-    // 5. Render resumen
-    document.getElementById('rp-nombre').textContent = producto.descripcion || producto.referencia;
-    document.getElementById('rp-ref-label').textContent = producto.referencia;
-    document.getElementById('rp-stock-actual').textContent = stockTotal;
-    document.getElementById('rp-total-entradas').textContent = totalEntradas;
-    document.getElementById('rp-total-salidas').textContent = totalSalidas;
+    var totalFacturado = 0;
+    data.facturas.forEach(function(f) { totalFacturado += f.cantidad; });
 
-    // 6. Render lotes
-    var lotesArr = Object.values(lotesProducto).sort(function(a,b){ return a.vence > b.vence ? 1 : -1; });
-    document.getElementById('rp-lotes-tbody').innerHTML = lotesArr.length ? lotesArr.map(function(l) {
-      var total = l.BODEGA + l.URO + l.NEURO + l.VP1 + l.VP2;
-      var days = Math.floor((new Date(l.vence+'T00:00:00') - new Date())/86400000);
-      var color = days < 0 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : '';
+    // Guardar para PDF
+    rpData = { producto: prod, data: data, stockTotal: stockTotal, stockBodega: stockBodega, stockMaletas: stockMaletas, totalConsignado: totalConsignado, totalFacturado: totalFacturado };
+
+    // Render tarjetas
+    document.getElementById('rp-nombre').textContent = prod.descripcion || prod.referencia;
+    document.getElementById('rp-ref-label').textContent = prod.referencia;
+    document.getElementById('rp-stock-total').textContent = stockTotal;
+    document.getElementById('rp-stock-bodega').textContent = stockBodega;
+    document.getElementById('rp-stock-maletas').textContent = stockMaletas;
+    document.getElementById('rp-total-consignado').textContent = totalConsignado;
+    document.getElementById('rp-total-facturado').textContent = totalFacturado;
+
+    // Render stock
+    var ubicLabel = { BODEGA:'Bodega Central', MALETA_URO:'Maleta URO', MALETA_NEURO:'Maleta NEURO', MALETA_VP1:'Maleta VP1', MALETA_VP2:'Maleta VP2' };
+    document.getElementById('rp-stock-tbody').innerHTML = data.stock.length ? data.stock.map(function(s) {
+      var days = Math.floor((new Date(s.fecha_vencimiento+'T00:00:00') - new Date())/86400000);
+      var vColor = days < 0 ? 'color:var(--red-800)' : days <= 90 ? 'color:var(--amber-800)' : '';
+      var ubColor = s.ubicacion_tipo === 'BODEGA' ? 'badge-teal' : 'badge-blue';
       return '<tr>'
-        + '<td class="mono" style="font-size:12px">' + l.lote + '</td>'
-        + '<td style="font-size:12px;' + color + '">' + fmt(l.vence) + '</td>'
-        + '<td style="text-align:center">' + (l.BODEGA||'-') + '</td>'
-        + '<td style="text-align:center">' + (l.URO||'-') + '</td>'
-        + '<td style="text-align:center">' + (l.NEURO||'-') + '</td>'
-        + '<td style="text-align:center">' + (l.VP1||'-') + '</td>'
-        + '<td style="text-align:center">' + (l.VP2||'-') + '</td>'
-        + '<td><strong>' + total + '</strong></td>'
+        + '<td class="mono" style="font-size:12px">' + s.numero_lote + '</td>'
+        + '<td style="font-size:12px;' + vColor + '">' + fmt(s.fecha_vencimiento) + '</td>'
+        + '<td><span class="badge ' + ubColor + '" style="font-size:10px">' + (ubicLabel[s.ubicacion_tipo] || s.ubicacion) + '</span></td>'
+        + '<td style="text-align:right;font-weight:600">' + s.cantidad + '</td>'
         + '</tr>';
-    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:20px">Sin stock disponible</td></tr>';
+    }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:20px">Sin stock disponible</td></tr>';
 
-    // 7. Render movimientos
-    var tipoLabel = { ENTRADA:'Entrada', SALIDA_NOTA:'Salida nota', DEVOLUCION_NOTA:'Devolucion nota', SALIDA_FACTURA:'Salida factura', TRANSFERENCIA:'Transferencia', ANULACION:'Anulacion', AJUSTE:'Ajuste', IMPORTACION_INICIAL:'Importacion' };
-    var tipoColor = { ENTRADA:'badge-teal', DEVOLUCION_NOTA:'badge-teal', SALIDA_NOTA:'badge-amber', SALIDA_FACTURA:'badge-blue', TRANSFERENCIA:'badge-gray', ANULACION:'badge-red' };
-
-    document.getElementById('rp-mov-count').textContent = movimientos.length + ' movimientos';
-    document.getElementById('rp-mov-tbody').innerHTML = movimientos.length ? movimientos.map(function(m) {
-      var fecha = m.fecha ? m.fecha.split('T')[0] : '-';
-      var hora = m.fecha ? (m.fecha.split('T')[1]||'').substring(0,5) : '';
-      var esEntrada = tiposEntrada.includes(m.tipo);
-      var signo = esEntrada ? '+' : '-';
-      var colorCant = esEntrada ? 'color:var(--teal-800);font-weight:600' : 'color:var(--red-800);font-weight:600';
+    // Render consignaciones
+    var estadoConsig = { ACTIVA:'badge-amber', FACTURADA:'badge-teal', DEVUELTA:'badge-gray' };
+    document.getElementById('rp-consig-count').textContent = data.consignaciones.length + ' registro(s)';
+    document.getElementById('rp-consig-tbody').innerHTML = data.consignaciones.length ? data.consignaciones.map(function(c) {
+      var nota = '';
+      var obsMatch = (c.observaciones || '').match(/N°\s*(\S+)/);
+      if (obsMatch) nota = obsMatch[1];
       return '<tr>'
-        + '<td style="font-size:12px">' + fmt(fecha) + ' <span style="color:var(--text-3);font-size:11px">' + hora + '</span></td>'
-        + '<td><span class="badge ' + (tipoColor[m.tipo]||'badge-gray') + '" style="font-size:10px">' + (tipoLabel[m.tipo]||m.tipo) + '</span></td>'
-        + '<td class="mono" style="font-size:11px">' + (m.lote_id||'').substring(0,12) + '…</td>'
-        + '<td style="' + colorCant + '">' + signo + m.cantidad + '</td>'
-        + '<td style="font-size:11px;color:var(--text-3)">' + (m.referencia_tipo||'-') + ' ' + (m.referencia_id ? m.referencia_id.substring(0,8)+'…' : '') + '</td>'
-        + '<td style="font-size:11px">' + (m.ubicacion_desde_nombre||'-') + '</td>'
-        + '<td style="font-size:11px">' + (m.ubicacion_hasta_nombre||'-') + '</td>'
+        + '<td style="font-size:12px">' + fmt(c.fecha) + '</td>'
+        + '<td>' + c.cliente + '</td>'
+        + '<td class="mono" style="font-size:12px">' + c.numero_lote + '</td>'
+        + '<td style="text-align:right;font-weight:600">' + c.cantidad + '</td>'
+        + '<td><span class="badge ' + (estadoConsig[c.estado]||'badge-gray') + '" style="font-size:10px">' + c.estado + '</span></td>'
+        + '<td style="font-size:11px;color:var(--text-3)">' + (nota ? 'Nota ' + nota : '-') + '</td>'
         + '</tr>';
-    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px">Sin movimientos en el periodo</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px">Sin consignaciones</td></tr>';
+
+    // Render notas
+    var estadoNota = { BORRADOR:'badge-gray', ENVIADA:'badge-blue', FACTURADA:'badge-teal', DEVUELTA:'badge-amber' };
+    document.getElementById('rp-notas-count').textContent = data.notas.length + ' registro(s)';
+    document.getElementById('rp-notas-tbody').innerHTML = data.notas.length ? data.notas.map(function(n) {
+      return '<tr>'
+        + '<td style="font-size:12px">' + fmt(n.fecha) + '</td>'
+        + '<td class="mono"><strong>' + n.numero + '</strong></td>'
+        + '<td>' + n.destino + '</td>'
+        + '<td class="mono" style="font-size:12px">' + n.numero_lote + '</td>'
+        + '<td style="text-align:right;font-weight:600">' + n.cantidad + '</td>'
+        + '<td><span class="badge ' + (n.direccion==='ENTRADA'?'badge-amber':'badge-teal') + '" style="font-size:10px">' + n.direccion + '</span></td>'
+        + '<td><span class="badge ' + (estadoNota[n.estado]||'badge-gray') + '" style="font-size:10px">' + n.estado + '</span></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px">Sin notas de envío</td></tr>';
+
+    // Render facturas
+    var estadoFact = { PENDIENTE:'badge-amber', PAGADA:'badge-teal', ANULADA:'badge-red' };
+    document.getElementById('rp-fact-count').textContent = data.facturas.length + ' registro(s)';
+    document.getElementById('rp-fact-tbody').innerHTML = data.facturas.length ? data.facturas.map(function(f) {
+      return '<tr>'
+        + '<td style="font-size:12px">' + fmt(f.fecha) + '</td>'
+        + '<td class="mono"><strong>' + f.numero + '</strong></td>'
+        + '<td>' + f.cliente + '</td>'
+        + '<td><span class="badge badge-gray" style="font-size:10px">' + f.tipo + '</span></td>'
+        + '<td class="mono" style="font-size:12px">' + f.numero_lote + '</td>'
+        + '<td style="text-align:right;font-weight:600">' + f.cantidad + '</td>'
+        + '<td><span class="badge ' + (estadoFact[f.estado]||'badge-gray') + '" style="font-size:10px">' + f.estado + '</span></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px">Sin facturas</td></tr>';
 
     document.getElementById('rp-resumen').style.display = 'block';
     document.getElementById('rp-export-btn').style.display = 'inline-flex';
@@ -5053,28 +5078,45 @@ function exportarReporteProductoPDF() {
   var jsPDF = window.jspdf.jsPDF;
   var doc = new jsPDF();
   var prod = rpData.producto;
-  var y = pdfHeader(doc, 'Reporte por Producto — ' + prod.referencia, prod.descripcion + ' | Stock: ' + rpData.stockTotal + ' uds | Entradas: +' + rpData.totalEntradas + ' Salidas: -' + rpData.totalSalidas);
+  var d = rpData.data;
+  var y = pdfHeader(doc, 'Reporte por Producto — ' + prod.referencia, prod.descripcion + ' | Stock: ' + rpData.stockTotal + ' | Bodega: ' + rpData.stockBodega + ' | Consignado: ' + rpData.totalConsignado + ' | Facturado: ' + rpData.totalFacturado);
   y += 2;
 
-  // Lotes table
-  doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(8,80,65);
-  doc.text('LOTES CON STOCK DISPONIBLE', 14, y); y += 4;
-  var hLotes = [{label:'N° Lote',w:36},{label:'Vencimiento',w:26},{label:'Bodega',w:20},{label:'URO',w:14},{label:'NEURO',w:16},{label:'VP1',w:14},{label:'VP2',w:14},{label:'Total',w:18}];
-  y = pdfTable(doc, hLotes, Object.values(rpData.lotes).map(function(l){
-    return [l.lote, fmt(l.vence), l.BODEGA||0, l.URO||0, l.NEURO||0, l.VP1||0, l.VP2||0, l.BODEGA+l.URO+l.NEURO+l.VP1+l.VP2];
-  }), y);
+  // Stock
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(8,80,65);
+  doc.text('DISTRIBUCIÓN DE STOCK ACTUAL', 14, y); y += 4;
+  y = pdfTable(doc, [{label:'N° Lote',w:40},{label:'Vencimiento',w:30},{label:'Ubicación',w:40},{label:'Cant.',w:20}],
+    d.stock.map(function(s){ return [s.numero_lote, fmt(s.fecha_vencimiento), s.ubicacion, s.cantidad]; }), y);
   y += 4;
 
-  // Movimientos table
-  doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(8,80,65);
-  doc.text('HISTORIAL DE MOVIMIENTOS (' + rpData.movimientos.length + ')', 14, y); y += 4;
-  var tipoLabel = { ENTRADA:'Entrada', SALIDA_NOTA:'Salida nota', DEVOLUCION_NOTA:'Devolucion', SALIDA_FACTURA:'Salida fact.', TRANSFERENCIA:'Transfer.', ANULACION:'Anulacion' };
-  var hMov = [{label:'Fecha',w:26},{label:'Tipo',w:28},{label:'Cant.',w:14},{label:'Referencia',w:30},{label:'Desde',w:42},{label:'Hasta',w:42}];
-  y = pdfTable(doc, hMov, rpData.movimientos.map(function(m){
-    var fecha = m.fecha ? m.fecha.split('T')[0] : '-';
-    var esE = ['ENTRADA','DEVOLUCION_NOTA','IMPORTACION_INICIAL'].includes(m.tipo);
-    return [fmt(fecha), tipoLabel[m.tipo]||m.tipo, (esE?'+':'-')+m.cantidad, (m.referencia_tipo||'')+' '+(m.referencia_id?m.referencia_id.substring(0,8):''), m.ubicacion_desde_nombre||'-', m.ubicacion_hasta_nombre||'-'];
-  }), y);
+  // Consignaciones
+  if (d.consignaciones.length) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(8,80,65);
+    doc.text('CONSIGNACIONES (' + d.consignaciones.length + ')', 14, y); y += 4;
+    y = pdfTable(doc, [{label:'Fecha',w:24},{label:'Cliente',w:40},{label:'Lote',w:34},{label:'Cant.',w:16},{label:'Estado',w:22}],
+      d.consignaciones.map(function(c){ return [fmt(c.fecha), c.cliente, c.numero_lote, c.cantidad, c.estado]; }), y);
+    y += 4;
+  }
+
+  // Notas
+  if (d.notas.length) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(8,80,65);
+    doc.text('NOTAS DE ENVÍO (' + d.notas.length + ')', 14, y); y += 4;
+    y = pdfTable(doc, [{label:'Fecha',w:22},{label:'N°',w:16},{label:'Destino',w:36},{label:'Lote',w:30},{label:'Cant.',w:14},{label:'Dir.',w:16},{label:'Estado',w:22}],
+      d.notas.map(function(n){ return [fmt(n.fecha), n.numero, n.destino, n.numero_lote, n.cantidad, n.direccion, n.estado]; }), y);
+    y += 4;
+  }
+
+  // Facturas
+  if (d.facturas.length) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(8,80,65);
+    doc.text('FACTURAS (' + d.facturas.length + ')', 14, y); y += 4;
+    y = pdfTable(doc, [{label:'Fecha',w:22},{label:'N° Fact.',w:22},{label:'Cliente',w:34},{label:'Tipo',w:18},{label:'Lote',w:28},{label:'Cant.',w:14},{label:'Estado',w:22}],
+      d.facturas.map(function(f){ return [fmt(f.fecha), f.numero, f.cliente, f.tipo, f.numero_lote, f.cantidad, f.estado]; }), y);
+  }
 
   doc.save('reporte-' + prod.referencia + '-' + today() + '.pdf');
   showAlert('Reporte PDF descargado.');
