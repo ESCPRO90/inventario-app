@@ -5282,7 +5282,7 @@ var catalogoFile = null;
 async function descargarCatalogoExcel() {
   try {
     showAlert('Generando Excel...');
-    var token = localStorage.getItem('token');
+    var token = getToken();
     var resp = await fetch(API + '/productos-admin/exportar-excel', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
@@ -5304,7 +5304,7 @@ async function subirCorreccionesCatalogo() {
   if (!catalogoFile) { showAlert('Seleccioná un archivo Excel.', 'error'); return; }
   try {
     showAlert('Procesando correcciones...');
-    var token = localStorage.getItem('token');
+    var token = getToken();
     var formData = new FormData();
     formData.append('file', catalogoFile);
     var resp = await fetch(API + '/productos-admin/importar-correcciones', {
